@@ -23,27 +23,26 @@ $^1$Dept. of Nuclear, Plasma, and Radiological Engineering, \\University of Illi
 
 
 \section*{Abstract}
-How to determine the design parameters of a nuclear reactor that would yield 
-more economical and safer design, and has higher breeder capability and greater 
-operational flexibility is an important challenge in the field of nuclear 
-engineering. In order to cope with this issue, an efficient, robust and 
-reliable method which is based on the use of the machine learning tools of 
-artificial intelligence technique is suggested in this study. The suggested 
-method is applied to the single fuel channel of Molten Salt Fast Reactor for 
-the selected seven independent input parameters: fuel (U, U/Pu, U/Th) and salt 
-(Na, Cl, F) types, enrichment, pitch and length of the channel, 
-moderator-to-salt ratio and channel power (or channel outlet temperature). The 
-outputs to be optimized are the infinite multiplication factor, conversion 
-ratio, fast flux on graphite material and feedback coefficients. The tools 
-(optimization, data mining and sampling etc.) of RAVEN framework, developed by 
-the Idaho National Laboratory, is used to produce the datasets, to explore the 
-search space and to train a model for the prediction of anticipated datasets. 
-The framework is coupled with SERPENT code as an external Monte Carlo particle 
-transport code to compute the defined outputs. This research would make a 
-significant contribution to the efforts on the improvement of the core design 
-by exposing all possible scenarios, facilitating the decision making, 
-accelerating the designing process and reducing the man-hours consumed in 
-modeling.
+Nuclear reactor design can improve economics, safety, breeding capability, and 
+operational flexibility. 
+Accordingly, we suggest an efficient, robust, and reliable design recommendation 
+approach based on machine learning methods.
+This approach explores seven independent input parameters
+in the context of a  single fuel channel of Molten Salt Fast Reactor, including 
+fissile material (U, U/Pu, U/Th), salt type (Na, Cl, F), enrichment, channel 
+pitch, channel length,
+moderator-to-salt ratio, and channel power (or channel outlet temperature). 
+Performance metric for optimization include 
+$k_{inf}$, the conversion ratio ($\gamma$), feedback coefficients ($\alpha_D$, 
+$\alpha_{V}$, $\alpha_{M}$), and the fast flux incident on graphite material.
+Optimization, data mining and sampling in this work will rely on the RAVEN 
+framework, developed by the Idaho National Laboratory, to produce the datasets, 
+to explore the parameter space, and to train a model for recommending design 
+optimization. The tool created in this work couples to the SERPENT neutron transport software.  
+to compute these design performance metrics. We expect this tool will make
+significant contributions to core design optimization by exposing multitudinous 
+possible scenarios, facilitating decision making, accelerating the design 
+process and reducing the man-hours consumed in modeling.
 
 
 \end{document}
