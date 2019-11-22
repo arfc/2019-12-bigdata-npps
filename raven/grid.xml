@@ -1,0 +1,377 @@
+<Simulation verbosity="debug">
+
+  <RunInfo>
+    <JobName>msr_channel_design</JobName>
+	<!-- ordered list of step names that RAVEN will run -->
+    <Sequence>feedbackCalc,runGrid,outputResults</Sequence>
+    <WorkingDir>projects</WorkingDir>
+	<!-- number of parallel runs executed simultaneously -->
+    <batchSize>1</batchSize>
+  </RunInfo>
+  <TestInfo>
+    <name>ForwardSamplingStrategy</name>
+    <author>mturkmen</author>
+    <created>2019-01-11</created>
+    <classesTested>Samplers.Grid</classesTested>
+    <description>
+      This input finds the optimized desings in a single fuel channel of molten salt reactor by using the grid technique
+	  as one of the forward sampling methods.
+    </description>
+    <revisions>
+      <revision date="2019-12-11" author="mturkmen">modified file to create machine-learning-enabled msr core design</revision>
+    </revisions>
+  </TestInfo>
+
+  <Steps>
+    <MultiRun name="feedbackCalc">
+	  <!-- runGrid runs serpent by the number of steps with sampled variable -->
+      <Input      class="Files"            type="" >SerpentInputFeed</Input>
+      <Model    class="Models"         type="Code">Serpent2</Model>
+      <Sampler class="Samplers"     type="Grid">FeedbackGridmethod</Sampler>
+	  <Output    class="DataObjects" type="PointSet">Feedback_samples</Output>
+    </MultiRun>
+	<MultiRun name="runGrid">
+	  <!-- runGrid runs serpent by the number of steps with sampled variable -->
+      <Input      class="Files"            type="" >SerpentInput</Input>
+      <Model    class="Models"         type="Code">Serpent2</Model>
+      <Sampler class="Samplers"     type="Grid">Gridmethod</Sampler>
+      <Output    class="DataObjects" type="PointSet">Grid_samples</Output>
+	  <Output class="Databases" type="HDF5">hdf5_database</Output>
+    </MultiRun>
+    <IOStep name="outputResults">
+        <Input class="DataObjects" type="PointSet">Feedback_samples</Input>
+		<Input class="DataObjects" type="PointSet">Grid_samples</Input>
+        <Output class="OutStreams" type="Print">Feedback_output</Output>
+		<Output class="OutStreams" type="Print">Grid_output</Output>
+    </IOStep>
+  </Steps>
+
+  <Models>
+    <!-- call serpent code for 32 processors -->
+    <Code name="Serpent2" subType="Serpent">
+      <executable>/projects/sciteam/bahg/serpent/src/sss2 -omp 32</executable-->
+      <clargs arg="aprun -n 1 -d 32 " type="prepend"/>
+      <clargs arg="" extension=".inp" type="input"/>
+    </Code>
+  </Models>
+  
+  <Files>
+    <Input name="SerpentInput" type=" ">Inputs/msr_channel_design.inp</Input>
+	<Input name="SerpentInputFeed" type=" ">Inputs/msr_channel_design_feedback.inp</Input>
+  </Files>
+  
+   <Distributions>
+    <!-- uniform distribution maximum 12% mole U235F4-->
+    <Uniform name="UF4_mole_frac_dist">
+      <lowerBound>10</lowerBound>
+      <upperBound>90</upperBound>
+    </Uniform>
+    <!-- uniform distribution maximum 12% mole U235F4-->
+    <Uniform name="U235F4_molefrac_dist">
+      <lowerBound>1</lowerBound>
+      <upperBound>20</upperBound>
+    </Uniform>
+	<!-- uniform distribution from 1 to 10cm-->
+    <Uniform name="pitch_dist">
+      <lowerBound>1</lowerBound>
+      <upperBound>10</upperBound>
+    </Uniform>
+	<!-- uniform distribution from 900 to 1200K-->
+    <Uniform name="Tave_fuel_dist">
+      <lowerBound>600</lowerBound>
+      <upperBound>1200</upperBound>
+    </Uniform> 
+	<!-- uniform distribution from 0.274 to 2.74-->
+    <Uniform name="mod_salt_ratio_dist">
+      <lowerBound>0.274</lowerBound>
+      <upperBound>2.74</upperBound>
+    </Uniform>
+	<!-- categorical distribution: 1 for Flibe, 2 for NaF, 3 for NaCl-->
+    <Categorical name="salt_type_dist">
+      <state outcome="1">0.334</state>
+      <state outcome="2">0.333</state>
+	  <state outcome="3">0.333</state>
+    </Categorical>
+	<!-- categorical distribution: 1 for U, 2 for U-Th, 3 for U-Pu-->
+    <Categorical name="fuel_type_dist">
+      <state outcome="1">0.334</state>
+      <state outcome="2">0.333</state>
+	  <state outcome="3">0.333</state>
+    </Categorical>
+  </Distributions>
+
+  <Functions>
+    <!-- calculation of dependent variables-->
+	<External name="FuelRadiusCalc" file="Scripts/FuelRadiusCalc.py">
+      <variables>pitch,mod_salt_ratio</variables>
+    </External>
+	<External name="Li6Calc" file="Scripts/Li6Calc.py">
+      <variables>UF4_mole_frac,U235F4_mole_frac,salt_type,fuel_type</variables>
+    </External>
+	<External name="Li7Calc" file="Scripts/Li7Calc.py">
+      <variables>UF4_mole_frac,U235F4_mole_frac,salt_type,fuel_type</variables>
+    </External>
+	<External name="Be9Calc" file="Scripts/Be9Calc.py">
+      <variables>UF4_mole_frac,U235F4_mole_frac,salt_type,fuel_type</variables>
+    </External>
+	<External name="F19Calc" file="Scripts/F19Calc.py">
+      <variables>UF4_mole_frac,U235F4_mole_frac,salt_type,fuel_type</variables>
+    </External>
+	<External name="Na23Calc" file="Scripts/Na23Calc.py">
+      <variables>UF4_mole_frac,U235F4_mole_frac,salt_type,fuel_type</variables>
+    </External>
+	<External name="Cl35Calc" file="Scripts/Cl35Calc.py">
+      <variables>UF4_mole_frac,U235F4_mole_frac,salt_type,fuel_type</variables>
+    </External>
+	<External name="Cl37Calc" file="Scripts/Cl37Calc.py">
+      <variables>UF4_mole_frac,U235F4_mole_frac,salt_type,fuel_type</variables>
+    </External>
+	<External name="Th232Calc" file="Scripts/Th232Calc.py">
+      <variables>UF4_mole_frac,U235F4_mole_frac,salt_type,fuel_type</variables>
+    </External>
+	<External name="U233Calc" file="Scripts/U233Calc.py">
+      <variables>UF4_mole_frac,U235F4_mole_frac,salt_type,fuel_type</variables>
+    </External>
+	<External name="U235Calc" file="Scripts/U235Calc.py">
+      <variables>UF4_mole_frac,U235F4_mole_frac,salt_type,fuel_type</variables>
+    </External>
+	<External name="U238Calc" file="Scripts/U238Calc.py">
+      <variables>UF4_mole_frac,U235F4_mole_frac,salt_type,fuel_type</variables>
+    </External>
+	<External name="Pu238Calc" file="Scripts/Pu238Calc.py">
+      <variables>UF4_mole_frac,U235F4_mole_frac,salt_type,fuel_type</variables>
+    </External>
+	<External name="Pu239Calc" file="Scripts/Pu239Calc.py">
+      <variables>UF4_mole_frac,U235F4_mole_frac,salt_type,fuel_type</variables>
+    </External>
+	<External name="Pu240Calc" file="Scripts/Pu240Calc.py">
+      <variables>UF4_mole_frac,U235F4_mole_frac,salt_type,fuel_type</variables>
+    </External>
+	<External name="Pu241Calc" file="Scripts/Pu241Calc.py">
+      <variables>UF4_mole_frac,U235F4_mole_frac,salt_type,fuel_type</variables>
+    </External>
+	<External name="Pu242Calc" file="Scripts/Pu242Calc.py">
+      <variables>UF4_mole_frac,U235F4_mole_frac,salt_type,fuel_type</variables>
+    </External>
+	<External name="SaltDensityCalc" file="Scripts/SaltDensityCalc.py">
+      <variables>salt_type,Tave_fuel</variables>
+    </External>
+	<External name="TempIdentifier" file="Scripts/TempIdentifier.py">
+      <variables>Tave_fuel</variables>
+    </External>
+  </Functions>
+
+  <Samplers>
+    <Grid name="Gridmethod">
+	  <variable name="fuel_type">
+        <distribution>fuel_type_dist</distribution>
+		<grid construction="custom" type="value">3</grid>
+      </variable>
+	  <variable name="salt_type">
+        <distribution>salt_type_dist</distribution>
+		<grid construction="custom"  type="value">3</grid>
+      </variable>
+      <variable name="U235F4_mole_frac">
+        <distribution>U235F4_molefrac_dist</distribution>
+		<!-- equally spaced steps with lower and upper bound -->
+        <grid construction="equal" steps="1" type="value">2.0 20.0</grid>
+      </variable>
+      <variable name="UF4_mole_frac">
+        <distribution>UF4_mole_frac_dist</distribution>
+		<!-- equally spaced steps with lower and upper bound -->
+        <grid construction="equal" steps="1" type="value">10.0 90.0</grid>
+      </variable>
+      <variable name="pitch">
+        <distribution>pitch_dist</distribution>
+		<!-- equally spaced steps with lower and upper bound -->
+        <grid construction="equal" steps="1" type="value">1.0  10.0</grid>
+      </variable>
+      <variable name="Tave_fuel">
+        <distribution>Tave_fuel_dist</distribution>
+		<!-- equally spaced steps with lower and upper bound -->
+        <grid construction="equal" steps="1" type="value">900  1200</grid>
+      </variable>
+      <variable name="mod_salt_ratio">
+        <distribution>mod_salt_ratio_dist</distribution>
+		<!-- equally spaced steps with lower and upper bound -->
+        <grid construction="equal" steps="1" type="value">0.274  2.74</grid>
+      </variable>
+	  <variable name="fuel_radius">
+        <function>FuelRadiusCalc</function>
+      </variable>
+	  <variable name="Li6_frac">
+        <function>Li6Calc</function>
+      </variable>
+	  <variable name="Li7_frac">
+        <function>Li7Calc</function>
+      </variable>
+	  <variable name="Be9_frac">
+        <function>Be9Calc</function>
+      </variable>
+	  <variable name="F19_frac">
+        <function>F19Calc</function>
+      </variable>
+	  <variable name="Na23_frac">
+        <function>Na23Calc</function>
+      </variable>
+	  <variable name="Cl35_frac">
+        <function>Cl35Calc</function>
+      </variable>
+	  <variable name="Cl37_frac">
+        <function>Cl37Calc</function>
+      </variable>
+	  <variable name="Th232_frac">
+        <function>Th232Calc</function>
+      </variable>
+	  <variable name="U233_frac">
+        <function>U233Calc</function>
+      </variable>
+	  <variable name="U235_frac">
+        <function>U235Calc</function>
+      </variable>
+	  <variable name="U238_frac">
+        <function>U238Calc</function>
+      </variable>
+	  <variable name="Pu238_frac">
+        <function>Pu238Calc</function>
+      </variable>
+	  <variable name="Pu239_frac">
+        <function>Pu239Calc</function>
+      </variable>
+	  <variable name="Pu240_frac">
+        <function>Pu240Calc</function>
+      </variable>
+	  <variable name="Pu241_frac">
+        <function>Pu241Calc</function>
+      </variable>
+	  <variable name="Pu242_frac">
+        <function>Pu242Calc</function>
+      </variable>
+	  <variable name="salt_density">
+        <function>SaltDensityCalc</function>
+      </variable>
+	  <variable name="temp_identifier">
+        <function>TempIdentifier</function>
+      </variable>
+    </Grid>
+    <Grid name="FeedbackGridmethod">
+	  <variable name="fuel_type">
+        <distribution>fuel_type_dist</distribution>
+		<grid construction="custom" type="value">3</grid>
+      </variable>
+	  <variable name="salt_type">
+        <distribution>salt_type_dist</distribution>
+		<grid construction="custom"  type="value">3</grid>
+      </variable>
+      <variable name="U235F4_mole_frac">
+        <distribution>U235F4_molefrac_dist</distribution>
+		<!-- equally spaced steps with lower and upper bound -->
+        <grid construction="equal" steps="1" type="value">2.0 20.0</grid>
+      </variable>
+      <variable name="UF4_mole_frac">
+        <distribution>UF4_mole_frac_dist</distribution>
+		<!-- equally spaced steps with lower and upper bound -->
+        <grid construction="equal" steps="1" type="value">10.0 90.0</grid>
+      </variable>
+      <variable name="pitch">
+        <distribution>pitch_dist</distribution>
+		<!-- equally spaced steps with lower and upper bound -->
+        <grid construction="equal" steps="1" type="value">1.0  10.0</grid>
+      </variable>
+      <variable name="Tave_fuel">
+        <distribution>Tave_fuel_dist</distribution>
+		<!-- equally spaced steps with lower and upper bound -->
+        <grid construction="custom" type="value">600</grid>
+      </variable>
+      <variable name="mod_salt_ratio">
+        <distribution>mod_salt_ratio_dist</distribution>
+		<!-- equally spaced steps with lower and upper bound -->
+        <grid construction="equal" steps="1" type="value">0.274  2.74</grid>
+      </variable>
+	  <variable name="fuel_radius">
+        <function>FuelRadiusCalc</function>
+      </variable>
+	  <variable name="Li6_frac">
+        <function>Li6Calc</function>
+      </variable>
+	  <variable name="Li7_frac">
+        <function>Li7Calc</function>
+      </variable>
+	  <variable name="Be9_frac">
+        <function>Be9Calc</function>
+      </variable>
+	  <variable name="F19_frac">
+        <function>F19Calc</function>
+      </variable>
+	  <variable name="Na23_frac">
+        <function>Na23Calc</function>
+      </variable>
+	  <variable name="Cl35_frac">
+        <function>Cl35Calc</function>
+      </variable>
+	  <variable name="Cl37_frac">
+        <function>Cl37Calc</function>
+      </variable>
+	  <variable name="Th232_frac">
+        <function>Th232Calc</function>
+      </variable>
+	  <variable name="U233_frac">
+        <function>U233Calc</function>
+      </variable>
+	  <variable name="U235_frac">
+        <function>U235Calc</function>
+      </variable>
+	  <variable name="U238_frac">
+        <function>U238Calc</function>
+      </variable>
+	  <variable name="Pu238_frac">
+        <function>Pu238Calc</function>
+      </variable>
+	  <variable name="Pu239_frac">
+        <function>Pu239Calc</function>
+      </variable>
+	  <variable name="Pu240_frac">
+        <function>Pu240Calc</function>
+      </variable>
+	  <variable name="Pu241_frac">
+        <function>Pu241Calc</function>
+      </variable>
+	  <variable name="Pu242_frac">
+        <function>Pu242Calc</function>
+      </variable>
+	  <variable name="salt_density">
+        <function>SaltDensityCalc</function>
+      </variable>
+	  <variable name="temp_identifier">
+        <function>TempIdentifier</function>
+      </variable>
+    </Grid>
+  </Samplers>
+
+  <DataObjects>
+    <PointSet name="Grid_samples">
+      <Input>fuel_type,salt_type,U235F4_mole_frac,UF4_mole_frac,pitch,Tave_fuel,mod_salt_ratio</Input>
+      <Output>k_inf, conversion_ratio, fast_flux_graph, feedback_doppler</Output>
+    </PointSet>
+	<PointSet name="Feedback_samples">
+      <Input>fuel_type,salt_type,U235F4_mole_frac,UF4_mole_frac,pitch,Tave_fuel,mod_salt_ratio</Input>
+      <Output>k_inf, conversion_ratio, fast_flux_graph, feedback_doppler</Output>
+    </PointSet>
+  </DataObjects>
+  
+  <Databases>
+    <HDF5 name="hdf5_database" readMode="overwrite"/>
+  </Databases>
+
+<OutStreams>
+    <Print name="Feedback_output">
+        <type>csv</type>
+        <source>Feedback_samples</source>
+    </Print>
+	<Print name="Grid_output">
+        <type>csv</type>
+        <source>Grid_samples</source>
+    </Print>
+</OutStreams>
+
+</Simulation>
