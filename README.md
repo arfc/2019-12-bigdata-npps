@@ -12,5 +12,5 @@ For the issuses related to running the Raven in BlueWaters, look up 'issues_with
 Running Raven Framework:
 
 1. Run 'raven_framework grid.xml' in your computer or use job file for BlueWaters. This produces 'Grid_output.csv' and 'hdf5_database.h5' files.  
-2. Use 'FeedbackCalc.py' and 'Grid_output.csv' files to obtain the total feedback coefficients. Or run 'raven_framework rom.xml'.
+2. Use 'FeedbackCalc.py' and 'Grid_output.csv' files to obtain the total feedback coefficients. Or run 'raven_framework DataMining.xml'.
 3. Finally, run 'clusterer.py' and 'regressor.py' for cluster and regression analyses.
