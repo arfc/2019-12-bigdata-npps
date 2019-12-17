@@ -1,0 +1,1766 @@
+<Simulation verbosity="quiet">
+
+    <TestInfo>
+        <name>ForwardSamplingStrategy</name>
+        <author>mturkmen</author>
+        <created>2019-01-11</created>
+        <classesTested>Samplers.Grid</classesTested>
+        <description>
+          This input finds the optimized desings in a single fuel channel of molten salt reactor by using the grid technique
+        as one of the forward sampling methods.
+        </description>
+        <revisions>
+            <revision date="2019-12-29" author="mturkmen">modified file to create machine-learning-enabled msr core design</revision>
+        </revisions>
+    </TestInfo>
+
+    <RunInfo>
+        <JobName>msr_channel_design</JobName>
+		<!-- Calculate feedbacks, Make optimization,Select a ROM and Postprocessing  types and Plot the datasets-->
+        <Sequence>load_grid_output,
+		                   feedbackCalcStep
+		                   load_feedback_output
+		</Sequence>
+        <WorkingDir>projects</WorkingDir>
+        <batchSize>3</batchSize>
+		<!-- <internalParallel>True</internalParallel> -->
+    </RunInfo>
+
+    <Files>
+        <Input name="grid_outputs" type=" ">outGridData.csv</Input>
+		<Input name="feedback_dataset" type=" ">feedbackCalcStep/1/outGridFeedback.csv</Input>
+    </Files>
+    
+    <Samplers>
+        <CustomSampler name="customSamplerFile">
+            <Source class="DataObjects" type="PointSet">calculatedData</Source>
+            <variable name="fuel_type"/>
+            <variable name="salt_type"/>
+            <variable name="U235F4_mole_frac"/>
+            <variable name="UF4_mole_frac"/>
+            <variable name="pitch"/>
+            <variable name="Tave_fuel"/>
+            <variable name="mod_salt_ratio"/>
+			<variable name="k_inf"/>
+			<variable name="conversion_ratio"/>
+			<variable name="fast_flux_graph"/>
+			<variable name="feedback_doppler"/>
+        </CustomSampler>
+    </Samplers>
+
+    <Steps>
+        <IOStep name="load_grid_output">
+            <Input class="Databases" type="HDF5">hdf5_database</Input>
+            <Output class="DataObjects" type="PointSet">outGrid</Output>
+			<Output class="OutStreams" type="Print">outGridData</Output>
+        </IOStep>
+	    <SingleRun name='feedbackCalcStep'>
+            <Input class='Files' type=''>grid_outputs</Input>
+			<Model class='Models' type='Code'>Feedback</Model>
+			<Output class="DataObjects" type="PointSet">justDummyy</Output>
+        </SingleRun>
+        <IOStep name="load_feedback_output">
+            <Input class="Files" type="">feedback_dataset</Input>
+            <Output class="DataObjects" type="PointSet">calculatedData</Output>
+        </IOStep>
+        <MultiRun name="dummyCustomSampler">
+            <Input class="DataObjects" type="PointSet">inputPlaceHolder</Input>
+            <Model class="Models" type="Dummy">MyDummy</Model>
+            <Sampler class="Samplers" type="CustomSampler">customSamplerFile</Sampler>
+            <Output class="DataObjects" type="PointSet">dummyTrainingData</Output>
+			<Output class="OutStreams" type="Print">dummyTrainingData_print</Output>
+        </MultiRun>
+        <MultiRun name="ROMSamplerNDspline">
+            <Input class="DataObjects" type="PointSet">inputPlaceHolder</Input>
+            <Model class="Models" type="ROM">ROM1</Model>
+            <Sampler class="Samplers" type="CustomSampler">customSamplerFile</Sampler>
+            <Output class="DataObjects" type="PointSet">NDsplineROMTrainingData</Output>
+        </MultiRun>
+        <RomTrainer name="runROMNDspline" verbosity="debug">
+            <Input class="DataObjects" type="PointSet">calculatedData</Input>
+            <Output class="Models" type="ROM">ROM1</Output>
+        </RomTrainer>
+        <MultiRun name="ROMSamplerNDinv">
+            <Input class="DataObjects" type="PointSet">inputPlaceHolder</Input>
+            <Model class="Models" type="ROM">ROM2</Model>
+            <Sampler class="Samplers" type="CustomSampler">customSamplerFile</Sampler>
+            <Output class="DataObjects" type="PointSet">NDinvROMTrainingData</Output>
+        </MultiRun>
+        <RomTrainer name="runROMNDinv" verbosity="debug">
+            <Input class="DataObjects" type="PointSet">calculatedData</Input>
+            <Output class="Models" type="ROM">ROM2</Output>
+        </RomTrainer>
+        <MultiRun name="ROMSamplerSvr">
+            <Input class="DataObjects" type="PointSet">inputPlaceHolder</Input>
+            <Model class="Models" type="ROM">ROM6</Model>
+            <Sampler class="Samplers" type="CustomSampler">customSamplerFile</Sampler>
+            <Output class="DataObjects" type="PointSet">SvrROMTrainingData</Output>
+        </MultiRun>
+        <RomTrainer name="runROMSvr" verbosity="debug">
+            <Input class="DataObjects" type="PointSet">calculatedData</Input>
+            <Output class="Models" type="ROM">ROM6</Output>
+        </RomTrainer>
+        <MultiRun name="ROMSamplerDtr">
+            <Input class="DataObjects" type="PointSet">inputPlaceHolder</Input>
+            <Model class="Models" type="ROM">ROM7</Model>
+            <Sampler class="Samplers" type="CustomSampler">customSamplerFile</Sampler>
+            <Output class="DataObjects" type="PointSet">DtrROMTrainingData</Output>
+        </MultiRun>
+        <RomTrainer name="runROMDtr" verbosity="debug">
+            <Input class="DataObjects" type="PointSet">calculatedData</Input>
+            <Output class="Models" type="ROM">ROM7</Output>
+        </RomTrainer>
+        <MultiRun name="ROMSamplerMlp">
+            <Input class="DataObjects" type="PointSet">inputPlaceHolder</Input>
+            <Model class="Models" type="ROM">ROM10</Model>
+            <Sampler class="Samplers" type="CustomSampler">customSamplerFile</Sampler>
+            <Output class="DataObjects" type="PointSet">MlpROMTrainingData</Output>
+        </MultiRun>
+        <RomTrainer name="runROMMlp" verbosity="debug">
+            <Input class="DataObjects" type="PointSet">calculatedData</Input>
+            <Output class="Models" type="ROM">ROM10</Output>
+        </RomTrainer>
+        <MultiRun name="ROMSamplerKnr">
+            <Input class="DataObjects" type="PointSet">inputPlaceHolder</Input>
+            <Model class="Models" type="ROM">ROM12</Model>
+            <Sampler class="Samplers" type="CustomSampler">customSamplerFile</Sampler>
+            <Output class="DataObjects" type="PointSet">KnrROMTrainingData</Output>
+        </MultiRun>
+        <RomTrainer name="runROMKnr" verbosity="debug">
+            <Input class="DataObjects" type="PointSet">calculatedData</Input>
+            <Output class="Models" type="ROM">ROM12</Output>
+        </RomTrainer>
+        <PostProcess name="PostKmeans">
+            <Input class="DataObjects" type="PointSet">calculatedData</Input>
+            <Model class="Models" type="PostProcessor">RandomForest</Model>
+            <Output class="DataObjects" type="PointSet">DataMineOutputs</Output>
+			<Output class="OutStreams" type="Print">dataMineDummy</Output>
+        </PostProcess>
+        <PostProcess name="PostPca">
+            <Input class="DataObjects" type="PointSet">DataMineOutputs</Input>
+            <Model class="Models" type="PostProcessor">DataMinePCA</Model>
+            <Output class="DataObjects" type="PointSet">pcaSamples</Output>
+            <Output class="OutStreams" type="Print">dataMinePcaDummy</Output>
+			<Output class="OutStreams" type="Plot">PlotPCA</Output>
+        </PostProcess>
+        <PostProcess name="PostAgglo">
+            <Input class="DataObjects" type="PointSet">calculatedData</Input>
+            <Model class="Models" type="PostProcessor">DataMineAgglo</Model>
+			<SolutionExport class="DataObjects" type="PointSet">clusterInfo</SolutionExport>
+            <Output class="DataObjects" type="PointSet">DataMineOutputs</Output>
+			<Output class="OutStreams" type="Print">dataMineDummy</Output>
+        </PostProcess>
+        <PostProcess name="PostHierarchical" pauseAtEnd="True">
+            <Input class="DataObjects" type="PointSet">calculatedData</Input>
+            <Model class="Models" type="PostProcessor">DataMineHierarchical</Model>
+            <Output class="DataObjects" type="PointSet">DataMineOutputs</Output>
+            <Output class="OutStreams" type="Print">dataMineDummy</Output>
+        </PostProcess>
+        <PostProcess name="PostIsomap" pauseAtEnd="True">
+            <Input class="DataObjects" type="PointSet">calculatedData</Input>
+            <Model class="Models" type="PostProcessor">DataMineIsomap</Model>
+            <Output class="DataObjects" type="PointSet">DataMineIsomapOutputs</Output>
+            <Output class="OutStreams" type="Print">dataMineIsomapDummy</Output>
+			<Output class="OutStreams" type="Plot">PlotIsomap</Output>
+        </PostProcess>
+        <PostProcess name="PostDBScan" pauseAtEnd="True">
+            <Input class="DataObjects" type="PointSet">calculatedData</Input>
+            <Model class="Models" type="PostProcessor">DataMineDBScan</Model>
+			<SolutionExport class="DataObjects" type="PointSet">clusterInfo</SolutionExport>
+            <Output class="DataObjects" type="PointSet">DataMineOutputs</Output>
+            <Output class="OutStreams" type="Print">dataMineDummy</Output>
+			<Output class="OutStreams" type="Plot">PlotDBScan</Output>
+        </PostProcess>
+        <IOStep name="PlotDataMineOutputs" pauseAtEnd="True">
+            <Input class="DataObjects" type="PointSet">DataMineOutputs</Input>
+			<Output class="OutStreams" type="Plot">DataMinePlots5</Output>
+			<Output class="OutStreams" type="Plot">DataMinePlots6</Output>
+			<Output class="OutStreams" type="Plot">DataMinePlots7</Output>
+			<Output class="OutStreams" type="Plot">Plotkinf</Output>
+			<Output class="OutStreams" type="Plot">PlotConversion1</Output>
+        </IOStep>
+        <IOStep name="PlotROMOutputs" pauseAtEnd="True">
+            <Input class="DataObjects" type="PointSet">NDsplineROMTrainingData</Input>
+			<Input class="DataObjects" type="PointSet">NDinvROMTrainingData</Input>
+			<Input class="DataObjects" type="PointSet">SvrROMTrainingData</Input>
+			<Input class="DataObjects" type="PointSet">DtrROMTrainingData</Input>
+			<Input class="DataObjects" type="PointSet">MlpROMTrainingData</Input>
+			<Input class="DataObjects" type="PointSet">KnrROMTrainingData</Input>
+			<Output class="OutStreams" type="Print">NDsplineTrainedData_print</Output>
+			<Output class="OutStreams" type="Print">NDinvTrainedData_print</Output>
+			<Output class="OutStreams" type="Print">SvrTrainedData_print</Output>
+			<Output class="OutStreams" type="Print">DtrTrainedData_print</Output>
+			<Output class="OutStreams" type="Print">MlpTrainedData_print</Output>
+			<Output class="OutStreams" type="Print">KnrTrainedData_print</Output>
+            <Output class="OutStreams" type="Plot">NDsplineTrainedData_plot</Output>
+            <Output class="OutStreams" type="Plot">NDinvTrainedData_plot</Output>
+			<Output class="OutStreams" type="Plot">SvrTrainedData_plot</Output>
+			<Output class="OutStreams" type="Plot">DtrTrainedData_plot</Output>
+			<Output class="OutStreams" type="Plot">MlpTrainedData_plot</Output>
+			<Output class="OutStreams" type="Plot">KnrTrainedData_plot</Output>
+        </IOStep>
+    </Steps>
+
+    <Models>
+        <Code name="Feedback" subType="GenericCode">
+		    <executable>/home/mt/Desktop/MSFR/2019-12-bigdata-npps/raven_input/projects/Scripts/FeedbackCalc.py</executable>
+            <clargs arg="python" type="prepend" />
+            <clargs arg="-i" extension=".csv" type="input" />
+        </Code>
+        <Dummy name="MyDummy" print="True" subType=""/>
+        <ROM name="ROM1" subType="NDspline">
+            <Features>features</Features>
+            <Target>targets</Target>
+        </ROM>
+        <ROM name="ROM2" subType="NDinvDistWeight">
+            <Features>features</Features>
+            <Target>targets</Target>
+            <p>3</p>
+        </ROM> 
+        <ROM name="ROM3" subType="KerasMLPClassifier">
+            <Features>features</Features>
+            <Target>k_inf</Target>
+            <loss>binary_crossentropy</loss>
+            <metrics>accuracy</metrics>
+            <batch_size>20</batch_size>
+            <epochs>20</epochs>
+            <num_classes>1</num_classes>
+            <plot_model>False</plot_model>
+            <validation_split>0.25</validation_split>
+            <random_seed>1980</random_seed>
+            <Dense name="layer1">
+                <activation>relu</activation>
+                <dim_out>12</dim_out>
+            </Dense>
+            <Dropout name="dropout1">
+                <rate>0.2</rate>
+            </Dropout>
+            <Dense name="layer2">
+                <activation>relu</activation>
+                <dim_out>8</dim_out>
+            </Dense>
+            <Dropout name="dropout2">
+                <rate>0.2</rate>
+            </Dropout>
+            <Dense name="outLayer">
+                <activation>sigmoid</activation>
+            </Dense>
+            <optimizerSetting>
+                <beta_1>0.9</beta_1>
+                <optimizer>Adam</optimizer>
+                <beta_2>0.999</beta_2>
+                <epsilon>1e-8</epsilon>
+                <decay>0.0</decay>
+                <lr>0.001</lr>
+            </optimizerSetting>
+            <layer_layout>layer1, dropout1, layer2, dropout2, outLayer</layer_layout>
+        </ROM>
+        <ROM name="ROM4" subType="KerasConvNetClassifier">
+            <!-- Common setups -->
+            <Features>features</Features>
+            <Target>k_inf</Target>
+            <loss>binary_crossentropy</loss>
+            <pivotParameter>k_inf</pivotParameter>
+            <metrics>accuracy</metrics>
+            <batch_size>1</batch_size>
+            <epochs>15</epochs>
+            <plot_model>False</plot_model>
+            <validation_split>0.1</validation_split>
+            <num_classes>1</num_classes>
+            <optimizerSetting>
+                <beta_1>0.9</beta_1>
+                <optimizer>Adam</optimizer>
+                <beta_2>0.999</beta_2>
+                <epsilon>1e-8</epsilon>
+                <decay>0.0</decay>
+                <lr>0.001</lr>
+            </optimizerSetting>
+            <!-- Setups for CNN -->
+            <Conv1D name="firstConv1D">
+                <activation>relu</activation>
+                <strides>1</strides>
+                <kernel_size>2</kernel_size>
+                <padding>valid</padding>
+                <dim_out>32</dim_out>
+            </Conv1D>
+            <MaxPooling1D name="pooling1">
+                <strides>2</strides>
+                <pool_size>2</pool_size>
+            </MaxPooling1D>
+            <Conv1D name="SecondConv1D">
+                <activation>relu</activation>
+                <strides>1</strides>
+                <kernel_size>2</kernel_size>
+                <padding>valid</padding>
+                <dim_out>32</dim_out>
+            </Conv1D>
+            <MaxPooling1D name="pooling2">
+                <strides>2</strides>
+                <pool_size>2</pool_size>
+            </MaxPooling1D>
+            <Flatten name="flatten">
+            </Flatten>
+            <Dense name="dense1">
+                <activation>relu</activation>
+                <dim_out>10</dim_out>
+            </Dense>
+            <Dropout name="dropout1">
+                <rate>0.25</rate>
+            </Dropout>
+            <Dropout name="dropout2">
+                <rate>0.25</rate>
+            </Dropout>
+            <Dense name="dense2">
+                <activation>sigmoid</activation>
+            </Dense>
+            <layer_layout>firstConv1D, pooling1, dropout1, SecondConv1D, pooling2, dropout2, flatten, dense1, dense2</layer_layout>
+        </ROM>
+        <ROM name="ROM5" subType="KerasLSTMClassifier">
+            <!-- Common setups -->
+            <Features>features</Features>
+            <Target>k_inf</Target>
+            <loss>categorical_crossentropy</loss>
+            <metrics>accuracy</metrics>
+            <batch_size>1</batch_size>
+            <epochs>3</epochs>
+            <plot_model>False</plot_model>
+            <validation_split>0.25</validation_split>
+            <num_classes>23</num_classes>
+            <random_seed>1986</random_seed>
+            <optimizerSetting>
+                <beta_1>0.9</beta_1>
+                <optimizer>Adam</optimizer>
+                <beta_2>0.999</beta_2>
+                <epsilon>1e-8</epsilon>
+                <decay>0.0</decay>
+                <lr>0.001</lr>
+            </optimizerSetting>
+            <!-- Setups for LSTM -->
+            <LSTM name="lstm1">
+                <activation>tanh</activation>
+                <dim_out>32</dim_out>
+            </LSTM>
+            <LSTM name="lstm2">
+                <activation>tanh</activation>
+                <dim_out>16</dim_out>
+            </LSTM>
+            <Dropout name="dropout">
+                <rate>0.25</rate>
+            </Dropout>
+            <Dense name="dense">
+                <activation>softmax</activation>
+            </Dense>
+            <layer_layout>lstm1,lstm2,dropout,dense</layer_layout>
+        </ROM>
+        <ROM name="ROM6" subType="SciKitLearn">
+            <SKLtype>svm|SVR</SKLtype>
+            <Features>features</Features>
+            <Target>targets</Target>
+            <kernel>rbf</kernel>
+            <tol>0.000001</tol>
+        </ROM>
+        <ROM name="ROM7" subType="SciKitLearn">
+            <SKLtype>tree|DecisionTreeRegressor</SKLtype>
+            <Features>features</Features>
+            <Target>targets</Target>
+            <criterion>mse</criterion>
+            <splitter>best</splitter>
+            <max_features>None</max_features>
+            <max_depth>None</max_depth>
+            <min_samples_split>2</min_samples_split>
+            <min_samples_leaf>1</min_samples_leaf>
+            <max_leaf_nodes>None</max_leaf_nodes>
+            <random_state>1</random_state>
+        </ROM>
+        <ROM name="ROM8" subType="SciKitLearn">
+            <SKLtype>tree|DecisionTreeClassifier</SKLtype>
+            <Features>features</Features>
+            <Target>targets</Target>
+            <criterion>gini</criterion>
+            <splitter>best</splitter>
+            <max_features>None</max_features>
+            <max_depth>None</max_depth>
+            <min_samples_split>2</min_samples_split>
+            <min_samples_leaf>1</min_samples_leaf>
+            <max_leaf_nodes>None</max_leaf_nodes>
+            <random_state>1</random_state>
+        </ROM>
+        <ROM name="ROM9" subType="SciKitLearn">
+            <SKLtype>neural_network|MLPClassifier</SKLtype>
+            <Features>features</Features>
+            <Target>targets</Target>
+            <activation>logistic</activation>
+            <solver>adam</solver>
+        </ROM>
+        <ROM name="ROM10" subType="SciKitLearn">
+            <SKLtype>neural_network|MLPRegressor</SKLtype>
+            <Features>features</Features>
+            <Target>targets</Target>
+            <activation>logistic</activation>
+            <solver>adam</solver>
+        </ROM>
+        <ROM name="ROM11" subType="SciKitLearn">
+            <SKLtype>neighbors|KNeighborsClassifier</SKLtype>
+            <Features>features</Features>
+            <Target>targets</Target>
+            <n_neighbors>5</n_neighbors>
+            <weights>uniform</weights>
+            <algorithm>auto</algorithm>
+            <leaf_size>30</leaf_size>
+            <metric>minkowski</metric>
+            <p>2</p>
+        </ROM>
+        <!-- for the data labels are continuous rather than discrete variables. -->
+        <ROM name="ROM12" subType="SciKitLearn">
+            <SKLtype>neighbors|KNeighborsRegressor</SKLtype>
+            <Features>features</Features>
+            <Target>targets</Target>
+            <n_neighbors>5</n_neighbors>
+            <weights>uniform</weights>
+            <algorithm>auto</algorithm>
+            <leaf_size>30</leaf_size>
+            <metric>minkowski</metric>
+            <p>2</p>
+        </ROM>
+        <!-- Postprocessing: Data Mining part -->
+        <PostProcessor name="DataMineKMeans" subType="DataMining">
+            <KDD labelFeature="labels" lib="SciKitLearn">
+                <SKLtype>cluster|KMeans</SKLtype>
+                <Features>targets</Features>
+                <n_clusters>5</n_clusters>
+                <init>random</init>
+				<tol>1e-10</tol>
+				<!-- <precompute_distances>True</precompute_distances> -->
+            </KDD>
+        </PostProcessor>
+        <PostProcessor name="DataMinePCA" subType="DataMining">
+            <KDD lib="SciKitLearn">
+                <SKLtype>decomposition|PCA</SKLtype>
+                <Features>features</Features>
+				<n_components>2</n_components>
+            </KDD>
+        </PostProcessor>
+        <PostProcessor name="DataMineAgglo" subType="DataMining">
+            <KDD labelFeature="labels" lib="SciKitLearn">
+                <SKLtype>cluster|Agglomerative</SKLtype>
+				<Features>features</Features>
+                <n_clusters>10</n_clusters>
+                <linkage>ward</linkage>
+				<connectivity>connectivity</connectivity>
+            </KDD>
+        </PostProcessor>
+        <PostProcessor name="DataMineHierarchical" subType="DataMining">
+            <KDD labelFeature="labels" lib="Scipy">
+                <SCIPYtype>cluster|Hierarchical</SCIPYtype>
+				<Features>features</Features>
+                <method>single</method>
+                <metric>euclidean</metric>
+                <level>0.3</level>
+                <criterion>distance</criterion>
+                <dendrogram>true</dendrogram>
+                <truncationMode>lastp</truncationMode>
+                <p>20</p>
+                <leafCounts>True</leafCounts>
+                <showContracted>True</showContracted>
+                <annotatedAbove>10</annotatedAbove>
+            </KDD>
+        </PostProcessor>
+        <PostProcessor name="DataMineIsomap" subType="DataMining" verbosity="quiet">
+            <KDD labelFeature="labels" lib="SciKitLearn">
+                <SKLtype>manifold|Isomap</SKLtype>
+				<n_neighbors>8</n_neighbors>
+                <Features>features</Features>
+                <n_components>2</n_components>
+            </KDD>
+        </PostProcessor>
+        <PostProcessor name="DataMineDBScan" subType="DataMining" verbosity="quiet">
+            <KDD labelFeature="labels" lib="SciKitLearn">
+                <SKLtype>cluster|DBSCAN</SKLtype>
+                <Features>features</Features>
+                <eps>0.5</eps>
+            </KDD>
+        </PostProcessor>
+        <PostProcessor name="SpectralCircles" subType="DataMining" verbosity="quiet">
+            <KDD labelFeature="labels" lib="SciKitLearn">
+                <Features>features</Features>
+                <SKLtype>cluster|SpectralClustering</SKLtype>
+                <n_clusters>8</n_clusters>
+                <eigen_solver>arpack</eigen_solver>
+                <affinity>nearest neighbors</affinity>
+            </KDD>
+        </PostProcessor>
+    </Models>
+
+    <VariableGroups>
+	    <Group name="features" >fuel_type,salt_type,U235F4_mole_frac,UF4_mole_frac,pitch,Tave_fuel,mod_salt_ratio</Group>
+        <Group name="targets" >k_inf, conversion_ratio, fast_flux_graph, feedback_doppler</Group>
+    </VariableGroups>
+
+    <DataObjects>
+        <PointSet name="justDummyy">
+            <Input>features</Input>
+            <Output>targets</Output>
+        </PointSet>
+        <PointSet name="calculatedData">
+            <Input>features</Input>
+            <Output>targets</Output>
+        </PointSet>	
+        <PointSet name="outGrid">
+            <Input>features</Input>
+            <Output>targets</Output>
+        </PointSet>
+        <PointSet name="inputPlaceHolder">
+            <Input>features,targets</Input>
+            <Output>OutputPlaceHolder</Output>
+        </PointSet>
+        <PointSet name="dummyTrainingData">
+            <Input>features</Input>
+            <Output>targets</Output>
+        </PointSet>
+        <PointSet name="NDsplineROMTrainingData">
+            <Input>features</Input>
+            <Output>targets</Output>
+        </PointSet>
+        <PointSet name="NDinvROMTrainingData">
+            <Input>features</Input>
+            <Output>targets</Output>
+        </PointSet>
+        <PointSet name="SvrROMTrainingData">
+            <Input>features</Input>
+            <Output>targets</Output>
+        </PointSet>
+        <PointSet name="DtrROMTrainingData">
+            <Input>features</Input>
+            <Output>targets</Output>
+        </PointSet>
+        <PointSet name="MlpROMTrainingData">
+            <Input>features</Input>
+            <Output>targets</Output>
+        </PointSet>
+        <PointSet name="KnrROMTrainingData">
+            <Input>features</Input>
+            <Output>targets</Output>
+        </PointSet>
+        <PointSet name="DataMineOutputs">
+            <Input>features</Input>
+            <Output>targets,labels</Output>
+        </PointSet>
+        <PointSet name="DataMineIsomapOutputs">
+            <Input>features,labels</Input>
+            <Output>targets,label1,label2</Output>
+        </PointSet>
+        <PointSet name="pcaSamples">
+            <Input>features</Input>
+            <Output>targets,DataMinePCADimension1,DataMinePCADimension2,labels</Output>
+        </PointSet>
+        <PointSet name="clusterInfo">
+            <Input>labels</Input>
+            <Output>features</Output>
+        </PointSet>
+    </DataObjects>
+
+    <OutStreams>
+	    <Print name="outGridData">
+            <type>csv</type>
+            <source>outGrid</source>
+        </Print> 
+        <Print name="dummyTrainingData_print">
+            <type>csv</type>
+            <source>dummyTrainingData</source>
+        </Print>
+        <Print name="NDsplineTrainedData_print">
+            <type>csv</type>
+            <source>NDsplineROMTrainingData</source>
+        </Print>
+        <Print name="NDinvTrainedData_print">
+            <type>csv</type>
+            <source>NDinvROMTrainingData</source>
+        </Print>
+        <Print name="SvrTrainedData_print">
+            <type>csv</type>
+            <source>SvrROMTrainingData</source>
+        </Print>
+        <Print name="DtrTrainedData_print">
+            <type>csv</type>
+            <source>DtrROMTrainingData</source>
+        </Print>
+        <Print name="MlpTrainedData_print">
+            <type>csv</type>
+            <source>MlpROMTrainingData</source>
+        </Print>
+        <Print name="KnrTrainedData_print">
+            <type>csv</type>
+            <source>KnrROMTrainingData</source>
+        </Print>
+        <Print name="dataMineDummy">
+            <type>csv</type>
+            <source>DataMineOutputs</source>
+        </Print>
+        <Print name="dataMineIsomapDummy">
+            <type>csv</type>
+            <source>DataMineIsomapOutputs</source>
+        </Print>
+        <Print name="dataMinePcaDummy">
+            <type>csv</type>
+            <source>pcaSamples</source>
+        </Print>
+        <Plot name="DataMinePlots5" verbosity="debug">
+            <plotSettings>
+                <plot>
+                    <type>dataMining</type>
+                    <SKLtype>cluster</SKLtype>
+                    <x>DataMineOutputs|Output|k_inf</x>
+                    <y>DataMineOutputs|Output|conversion_ratio</y>
+                    <z>DataMineOutputs|Output|feedback_doppler</z>
+                    <clusterLabels>DataMineOutputs|Output|labels</clusterLabels>
+                    <kwargs>
+                        <edgecolor>none</edgecolor>
+                    </kwargs>
+					<s>8</s>
+					<marker>.</marker>
+					<!-- <cmap>summer</cmap> -->
+					<colorMap>DataMineOutputs|Output|labels</colorMap>
+                </plot>
+                <xlabel>k_inf</xlabel>
+                <ylabel>conversion_ratio</ylabel>
+                <zlabel>feedback_doppler</zlabel>
+            </plotSettings>
+            <actions>
+                <how>png,eps</how>
+				<labelFormat>
+				    <style>plain</style>
+					<!-- <useOffset>True</useOffset> -->
+				</labelFormat>
+                <title>
+                    <text> </text>
+                </title>
+				<camera>
+				    <azimuth>315</azimuth>
+				</camera>
+				<figureProperties>
+				    <figsize>6,5</figsize>
+					<dpi>500</dpi>
+				</figureProperties>
+				<range>
+				    <ymin>0 </ymin><ymax>2</ymax>
+					<xmin>0.5 </xmin><xmax>2</xmax>
+				</range>
+<!--                 <labelFormat>
+                    <axis>z</axis>
+                </labelFormat> -->
+            </actions>
+			<filename>3Dscatter-5</filename>
+        </Plot>
+        <Plot name="DataMinePlots6" overwrite="false">
+            <plotSettings>
+                <plot>
+                    <type>dataMining</type>
+                    <SKLtype>cluster</SKLtype>
+                    <clusterLabels>DataMineOutputs|Output|labels</clusterLabels>
+                    <x>DataMineOutputs|Output|k_inf</x>
+                    <y>DataMineOutputs|Output|conversion_ratio</y>
+					<s>5</s>
+					<marker>.</marker>
+					<!-- <cmap>summer</cmap> -->
+					<colorMap>DataMineOutputs|Output|labels</colorMap>
+                </plot>
+		        <xlabel>k_inf</xlabel>
+                <ylabel>conversion_ratio</ylabel>
+            </plotSettings>
+            <actions>
+                <how>png,eps</how>
+				<range>
+				    <ymin>0 </ymin><ymax>2</ymax>
+					<xmin>0.5 </xmin><xmax>2</xmax>
+				</range>
+				<labelFormat>
+				    <style>plain</style>
+				</labelFormat>
+                <title>
+                    <text> </text>
+                </title>
+				<figureProperties>
+				    <figsize>5,4</figsize>
+					<dpi>500</dpi>
+				</figureProperties>
+            </actions>
+            <filename>DataMinePlots6</filename>
+        </Plot>
+        <Plot name="DataMinePlots7" overwrite="false">
+            <plotSettings>
+                <plot>
+                    <type>dataMining</type>
+                    <SKLtype>cluster</SKLtype>
+                    <clusterLabels>DataMineOutputs|Output|labels</clusterLabels>
+                    <x>DataMineOutputs|Output|feedback_doppler</x>
+                    <y>DataMineOutputs|Output|fast_flux_graph</y>
+					<s>5</s>
+					<marker>.</marker>
+					<!-- <cmap>summer</cmap> -->
+					<colorMap>DataMineOutputs|Output|labels</colorMap>
+                </plot>
+		        <xlabel>feedback_doppler (pcm)</xlabel>
+                <ylabel>fast_flux per source</ylabel>
+            </plotSettings>
+            <actions>
+                <how>png,eps</how>
+				<labelFormat>
+				    <style>plain</style>
+				</labelFormat>
+                <title>
+                    <text> </text>
+                </title>
+				<range>
+					<xmin>-15 </xmin><xmax>5</xmax>
+				</range>
+				<figureProperties>
+				    <figsize>5,4</figsize>
+					<dpi>500</dpi>
+				</figureProperties>
+            </actions>
+            <filename>DataMinePlots7</filename>
+        </Plot>
+        <Plot name="Plotkinf" overwrite="false" verbosity="debug">
+            <plotSettings>
+                <gridSpace>18 12</gridSpace>
+                <plot>
+                    <type>dataMining</type>
+                    <SKLtype>cluster</SKLtype>
+                    <x>DataMineOutputs|Input|fuel_type</x>
+                    <y>DataMineOutputs|Output|k_inf</y>
+                    <xlabel>Fuel Type (U, U-Th, U-Pu)</xlabel>
+                    <ylabel>k_inf</ylabel>
+                    <clusterLabels>DataMineOutputs|Output|labels</clusterLabels>
+                    <gridLocation>
+                        <x>0 5</x>
+                        <y>0 5</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+                <plot>
+                    <type>dataMining</type>
+                    <SKLtype>cluster</SKLtype>
+                    <x>DataMineOutputs|Input|salt_type</x>
+                    <y>DataMineOutputs|Output|k_inf</y>
+                    <xlabel>Salt Type (LiF, NaF, NaCl)</xlabel>
+                    <ylabel>k_inf</ylabel>
+                    <clusterLabels>DataMineOutputs|Output|labels</clusterLabels>
+                    <gridLocation>
+                        <x>6 11</x>
+                        <y>0 5</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+                <plot>
+                    <type>dataMining</type>
+                    <SKLtype>cluster</SKLtype>
+                    <x>DataMineOutputs|Input|U235F4_mole_frac</x>
+                    <y>DataMineOutputs|Output|k_inf</y>
+                    <xlabel>U-235 fraction in U (%)</xlabel>
+                    <ylabel>k_inf</ylabel>
+                    <clusterLabels>DataMineOutputs|Output|labels</clusterLabels>
+                    <gridLocation>
+                        <x>12 17</x>
+                        <y>0 5</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+                <plot>
+                    <type>dataMining</type>
+                    <SKLtype>cluster</SKLtype>
+                    <x>DataMineOutputs|Input|UF4_mole_frac</x>
+                    <y>DataMineOutputs|Output|k_inf</y>
+                    <xlabel>U fraction in HWM (%)</xlabel>
+                    <ylabel>k_inf</ylabel>
+                    <clusterLabels>DataMineOutputs|Output|labels</clusterLabels>
+                    <gridLocation>
+                        <x>0 5</x>
+                        <y>6 11</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+                <plot>
+                    <type>dataMining</type>
+                    <SKLtype>cluster</SKLtype>
+                    <x>DataMineOutputs|Input|pitch</x>
+                    <y>DataMineOutputs|Output|k_inf</y>
+                    <xlabel>Pitch (cm)</xlabel>
+                    <ylabel>k_inf</ylabel>
+                    <clusterLabels>DataMineOutputs|Output|labels</clusterLabels>
+                    <gridLocation>
+                        <x>6 11</x>
+                        <y>6 11</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+                <plot>
+                    <type>dataMining</type>
+                    <SKLtype>cluster</SKLtype>
+                    <x>DataMineOutputs|Input|mod_salt_ratio</x>
+                    <y>DataMineOutputs|Output|k_inf</y>
+                    <xlabel>Moderator to Fuel Ratio</xlabel>
+                    <ylabel>k_inf</ylabel>
+                    <clusterLabels>DataMineOutputs|Output|labels</clusterLabels>
+                    <gridLocation>
+                        <x>12 17</x>
+                        <y>6 11</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+            </plotSettings>
+            <actions>
+                <how>png,eps</how>
+				<labelFormat>
+				    <style>plain</style>
+				</labelFormat>
+                <title>
+                    <text> </text>
+                </title>
+				<figureProperties>
+				    <figsize>12,9</figsize>
+					<dpi>400</dpi>
+				</figureProperties>
+            </actions>
+            <filename>Plotkinf</filename>
+        </Plot>
+        <Plot name="PlotConversion1" overwrite="false" verbosity="debug">
+            <plotSettings>
+                <gridSpace>18 12</gridSpace>
+                <plot>
+                    <type>dataMining</type>
+                    <SKLtype>cluster</SKLtype>
+                    <x>DataMineOutputs|Input|fuel_type</x>
+                    <y>DataMineOutputs|Output|conversion_ratio</y>
+                    <xlabel>Fuel Type (U, U-Th, U-Pu)</xlabel>
+                    <ylabel>CR</ylabel>
+    				<range>
+    				    <ymin>0 </ymin><ymax>2</ymax>
+    				</range>
+                    <clusterLabels>DataMineOutputs|Output|labels</clusterLabels>
+                    <gridLocation>
+                        <x>0 5</x>
+                        <y>0 5</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+                <plot>
+                    <type>dataMining</type>
+                    <SKLtype>cluster</SKLtype>
+                    <x>DataMineOutputs|Input|salt_type</x>
+                    <y>DataMineOutputs|Output|conversion_ratio</y>
+                    <xlabel>Salt Type (LiF, NaF, NaCl)</xlabel>
+                    <ylabel>CR</ylabel>
+    				<range>
+    				    <ymin>0 </ymin><ymax>2</ymax>
+    				</range>
+                    <clusterLabels>DataMineOutputs|Output|labels</clusterLabels>
+                    <gridLocation>
+                        <x>6 11</x>
+                        <y>0 5</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+                <plot>
+                    <type>dataMining</type>
+                    <SKLtype>cluster</SKLtype>
+                    <x>DataMineOutputs|Input|U235F4_mole_frac</x>
+                    <y>DataMineOutputs|Output|conversion_ratio</y>
+                    <xlabel>U-235 fraction in U (%)</xlabel>
+                    <ylabel>CR</ylabel>
+    				<range>
+    				    <ymin>0 </ymin><ymax>2</ymax>
+    				</range>
+                    <clusterLabels>DataMineOutputs|Output|labels</clusterLabels>
+                    <gridLocation>
+                        <x>12 17</x>
+                        <y>0 5</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+                <plot>
+                    <type>dataMining</type>
+                    <SKLtype>cluster</SKLtype>
+                    <x>DataMineOutputs|Input|UF4_mole_frac</x>
+                    <y>DataMineOutputs|Output|conversion_ratio</y>
+                    <xlabel>U fraction in HWM (%)</xlabel>
+                    <ylabel>CR</ylabel>
+    				<range>
+    				    <ymin>0 </ymin><ymax>2</ymax>
+    				</range>
+                    <clusterLabels>DataMineOutputs|Output|labels</clusterLabels>
+                    <gridLocation>
+                        <x>0 5</x>
+                        <y>6 11</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+                <plot>
+                    <type>dataMining</type>
+                    <SKLtype>cluster</SKLtype>
+                    <x>DataMineOutputs|Input|pitch</x>
+                    <y>DataMineOutputs|Output|conversion_ratio</y>
+                    <xlabel>Pitch (cm)</xlabel>
+                    <ylabel>CR</ylabel>
+    				<range>
+    				    <ymin>0 </ymin><ymax>2</ymax>
+    				</range>
+                    <clusterLabels>DataMineOutputs|Output|labels</clusterLabels>
+                    <gridLocation>
+                        <x>6 11</x>
+                        <y>6 11</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+                <plot>
+                    <type>dataMining</type>
+                    <SKLtype>cluster</SKLtype>
+                    <x>DataMineOutputs|Input|mod_salt_ratio</x>
+                    <y>DataMineOutputs|Output|conversion_ratio</y>
+                    <xlabel>Moderator to Fuel Ratio</xlabel>
+                    <ylabel>CR</ylabel>
+    				<range>
+    				    <ymin>0 </ymin><ymax>2</ymax>
+    				</range>
+                    <clusterLabels>DataMineOutputs|Output|labels</clusterLabels>
+                    <gridLocation>
+                        <x>12 17</x>
+                        <y>6 11</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+            </plotSettings>
+            <actions>
+                <how>png,eps</how>
+				<range>
+				    <ymin>0 </ymin><ymax>2</ymax>
+				</range>
+				<labelFormat>
+				    <style>plain</style>
+				</labelFormat>
+                <title>
+                    <text> </text>
+                </title>
+				<figureProperties>
+				    <figsize>12,9</figsize>
+					<dpi>500</dpi>
+				</figureProperties>
+            </actions>
+            <filename>PlotConversion1</filename>
+        </Plot>
+        <Plot name="PlotIsomap" overwrite="false" verbosity="debug">
+            <plotSettings>
+                <plot>
+                    <type>dataMining</type>
+                    <SKLtype>cluster</SKLtype>
+                    <x>DataMineIsomapOutputs|Output|label1</x>
+                    <y>DataMineIsomapOutputs|Output|label2</y>
+                    <clusterLabels>DataMineIsomapOutputs|Input|labels</clusterLabels>
+                </plot>
+                <xlabel>Embedding Vector 1</xlabel>
+                <ylabel>Embedding Vector 2</ylabel>
+            </plotSettings>
+            <actions>
+                <how>png,eps</how>
+				<labelFormat>
+				    <style>plain</style>
+				</labelFormat>
+				<figureProperties>
+				    <figsize>11.7,8.3</figsize>
+					<dpi>500</dpi>
+				</figureProperties>
+            </actions>
+            <filename>isomapcomponents</filename>
+        </Plot>
+        <Plot name="PlotPCA" overwrite="false">
+            <plotSettings>
+                <plot>
+                    <type>dataMining</type>
+                    <SKLtype>cluster</SKLtype>
+                    <clusterLabels>pcaSamples|Output|labels</clusterLabels>
+					<s>5</s>
+					<cmap>summer</cmap>
+                    <legend>
+                        <loc>best</loc>
+                        <ncol>2</ncol>
+                    </legend>
+                    <x>pcaSamples|Output|DataMinePCADimension1</x>
+                    <y>pcaSamples|Output|DataMinePCADimension2</y>
+                </plot>
+		        <xlabel>PCAComponent1</xlabel>
+                <ylabel>PCAComponent2</ylabel>
+            </plotSettings>
+            <actions>
+                <how>png,eps</how>
+				<labelFormat>
+				    <style>plain</style>
+				</labelFormat>
+                <title>
+                    <text> </text>
+                </title>
+				<figureProperties>
+				    <figsize>5,4</figsize>
+					<dpi>500</dpi>
+				</figureProperties>
+            </actions>
+            <filename>pcacomponents</filename>
+        </Plot>
+        <Plot name="PlotDBScan" overwrite="false">
+            <plotSettings>
+                <plot>
+                    <type>scatter</type>
+                    <colorMap>DataMineOutputs|Output|labels</colorMap>
+					<cmap>summer</cmap>
+                    <x>DataMineOutputs|Input|k_inf</x>
+                    <y>DataMineOutputs|Input|conversion_ratio</y>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+		        <xlabel>k_inf</xlabel>
+                <ylabel>conversion_ratio</ylabel>
+            </plotSettings>
+            <actions>
+                <how>png,eps</how>
+				<labelFormat>
+				    <style>plain</style>
+				</labelFormat>
+				<figureProperties>
+				    <figsize>11.7,8.3</figsize>
+					<dpi>500</dpi>
+				</figureProperties>
+            </actions>
+            <filename>dbscanplot</filename>
+        </Plot>
+        <Plot name="NDsplineTrainedData_plot" overwrite="false" verbosity="debug">
+            <plotSettings>
+                <gridSpace>18 18</gridSpace>
+                <plot>
+                    <type>scatter</type>
+                    <x>NDsplineROMTrainingData|Input|fuel_type</x>
+                    <y>NDsplineROMTrainingData|Output|k_inf</y>
+                    <xlabel>Fuel Type (U, U-Th, U-Pu)</xlabel>
+                    <ylabel>k_inf</ylabel>
+                    <gridLocation>
+                        <x>0 5</x>
+                        <y>0 5</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+                <plot>
+                    <type>scatter</type>
+                    <x>NDsplineROMTrainingData|Input|salt_type</x>
+                    <y>NDsplineROMTrainingData|Output|k_inf</y>
+                    <xlabel>Salt Type (LiF, NaF, NaCl)</xlabel>
+                    <ylabel>k_inf</ylabel>
+                    <gridLocation>
+                        <x>6 11</x>
+                        <y>0 5</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+                <plot>
+                    <type>scatter</type>
+                    <x>NDsplineROMTrainingData|Input|U235F4_mole_frac</x>
+                    <y>NDsplineROMTrainingData|Output|k_inf</y>
+                    <xlabel>U-235 fraction in U (%)</xlabel>
+                    <ylabel>k_inf</ylabel>
+                    <gridLocation>
+                        <x>12 17</x>
+                        <y>0 5</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+                <plot>
+                    <type>scatter</type>
+                    <x>NDsplineROMTrainingData|Input|UF4_mole_frac</x>
+                    <y>NDsplineROMTrainingData|Output|k_inf</y>
+                    <xlabel>U fraction in HWM (%)</xlabel>
+                    <ylabel>k_inf</ylabel>
+                    <gridLocation>
+                        <x>0 5</x>
+                        <y>6 11</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+                <plot>
+                    <type>scatter</type>
+                    <x>NDsplineROMTrainingData|Input|pitch</x>
+                    <y>NDsplineROMTrainingData|Output|k_inf</y>
+                    <xlabel>Pitch (cm)</xlabel>
+                    <ylabel>k_inf</ylabel>
+                    <gridLocation>
+                        <x>6 11</x>
+                        <y>6 11</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+                <plot>
+                    <type>scatter</type>
+                    <x>NDsplineROMTrainingData|Input|Tave_fuel</x>
+                    <y>NDsplineROMTrainingData|Output|k_inf</y>
+                    <xlabel>Average Fuel Temperature (K)</xlabel>
+                    <ylabel>k_inf</ylabel>
+                    <gridLocation>
+                        <x>12 17</x>
+                        <y>6 11</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+                <plot>
+                    <type>scatter</type>
+                    <x>NDsplineROMTrainingData|Input|mod_salt_ratio</x>
+                    <y>NDsplineROMTrainingData|Output|k_inf</y>
+                    <xlabel>Moderator to Fuel Ratio</xlabel>
+                    <ylabel>k_inf</ylabel>
+                    <gridLocation>
+                        <x>0 5</x>
+                        <y>12 17</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+            </plotSettings>
+            <actions>
+                <how>png,eps</how>
+				<labelFormat>
+				    <style>plain</style>
+				</labelFormat>
+				<figureProperties>
+				    <figsize>11.7,8.3</figsize>
+					<dpi>500</dpi>
+				</figureProperties>
+                <title>
+                    <text> </text>
+                </title>
+            </actions>
+            <filename>NDsplineTrainedData_plot</filename>
+        </Plot>
+        <Plot name="NDinvTrainedData_plot" overwrite="false" verbosity="debug">
+            <plotSettings>
+                <gridSpace>18 18</gridSpace>
+                <plot>
+                    <type>scatter</type>
+                    <x>NDinvROMTrainingData|Input|fuel_type</x>
+                    <y>NDinvROMTrainingData|Output|k_inf</y>
+                    <xlabel>Fuel Type (U, U-Th, U-Pu)</xlabel>
+                    <ylabel>k_inf</ylabel>
+                    <gridLocation>
+                        <x>0 5</x>
+                        <y>0 5</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+                <plot>
+                    <type>scatter</type>
+                    <x>NDinvROMTrainingData|Input|salt_type</x>
+                    <y>NDinvROMTrainingData|Output|k_inf</y>
+                    <xlabel>Salt Type (LiF, NaF, NaCl)</xlabel>
+                    <ylabel>k_inf</ylabel>
+                    <gridLocation>
+                        <x>6 11</x>
+                        <y>0 5</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+                <plot>
+                    <type>scatter</type>
+                    <x>NDinvROMTrainingData|Input|U235F4_mole_frac</x>
+                    <y>NDinvROMTrainingData|Output|k_inf</y>
+                    <xlabel>U-235 fraction in U (%)</xlabel>
+                    <ylabel>k_inf</ylabel>
+                    <gridLocation>
+                        <x>12 17</x>
+                        <y>0 5</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+                <plot>
+                    <type>scatter</type>
+                    <x>NDinvROMTrainingData|Input|UF4_mole_frac</x>
+                    <y>NDinvROMTrainingData|Output|k_inf</y>
+                    <xlabel>U fraction in HWM (%)</xlabel>
+                    <ylabel>k_inf</ylabel>
+                    <gridLocation>
+                        <x>0 5</x>
+                        <y>6 11</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+                <plot>
+                    <type>scatter</type>
+                    <x>NDinvROMTrainingData|Input|pitch</x>
+                    <y>NDinvROMTrainingData|Output|k_inf</y>
+                    <xlabel>Pitch (cm)</xlabel>
+                    <ylabel>k_inf</ylabel>
+                    <gridLocation>
+                        <x>6 11</x>
+                        <y>6 11</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+                <plot>
+                    <type>scatter</type>
+                    <x>NDinvROMTrainingData|Input|Tave_fuel</x>
+                    <y>NDinvROMTrainingData|Output|k_inf</y>
+                    <xlabel>Average Fuel Temperature (K)</xlabel>
+                    <ylabel>k_inf</ylabel>
+                    <gridLocation>
+                        <x>12 17</x>
+                        <y>6 11</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+                <plot>
+                    <type>scatter</type>
+                    <x>NDinvROMTrainingData|Input|mod_salt_ratio</x>
+                    <y>NDinvROMTrainingData|Output|k_inf</y>
+                    <xlabel>Moderator to Fuel Ratio</xlabel>
+                    <ylabel>k_inf</ylabel>
+                    <gridLocation>
+                        <x>0 5</x>
+                        <y>12 17</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+            </plotSettings>
+            <actions>
+                <how>png,eps</how>
+				<labelFormat>
+				    <style>plain</style>
+				</labelFormat>
+				<figureProperties>
+				    <figsize>11.7,8.3</figsize>
+					<dpi>500</dpi>
+				</figureProperties>
+                <title>
+                    <text> </text>
+                </title>
+            </actions>
+            <filename>NDinvTrainedData_plot</filename>
+        </Plot>
+        <Plot name="SvrTrainedData_plot" overwrite="false" verbosity="debug">
+            <plotSettings>
+                <gridSpace>18 18</gridSpace>
+                <plot>
+                    <type>scatter</type>
+                    <x>SvrROMTrainingData|Input|fuel_type</x>
+                    <y>SvrROMTrainingData|Output|k_inf</y>
+                    <xlabel>Fuel Type (U, U-Th, U-Pu)</xlabel>
+                    <ylabel>k_inf</ylabel>
+                    <gridLocation>
+                        <x>0 5</x>
+                        <y>0 5</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+                <plot>
+                    <type>scatter</type>
+                    <x>SvrROMTrainingData|Input|salt_type</x>
+                    <y>SvrROMTrainingData|Output|k_inf</y>
+                    <xlabel>Salt Type (LiF, NaF, NaCl)</xlabel>
+                    <ylabel>k_inf</ylabel>
+                    <gridLocation>
+                        <x>6 11</x>
+                        <y>0 5</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+                <plot>
+                    <type>scatter</type>
+                    <x>SvrROMTrainingData|Input|U235F4_mole_frac</x>
+                    <y>SvrROMTrainingData|Output|k_inf</y>
+                    <xlabel>U-235 fraction in U (%)</xlabel>
+                    <ylabel>k_inf</ylabel>
+                    <gridLocation>
+                        <x>12 17</x>
+                        <y>0 5</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+                <plot>
+                    <type>scatter</type>
+                    <x>SvrROMTrainingData|Input|UF4_mole_frac</x>
+                    <y>SvrROMTrainingData|Output|k_inf</y>
+                    <xlabel>U fraction in HWM (%)</xlabel>
+                    <ylabel>k_inf</ylabel>
+                    <gridLocation>
+                        <x>0 5</x>
+                        <y>6 11</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+                <plot>
+                    <type>scatter</type>
+                    <x>SvrROMTrainingData|Input|pitch</x>
+                    <y>SvrROMTrainingData|Output|k_inf</y>
+                    <xlabel>Pitch (cm)</xlabel>
+                    <ylabel>k_inf</ylabel>
+                    <gridLocation>
+                        <x>6 11</x>
+                        <y>6 11</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+                <plot>
+                    <type>scatter</type>
+                    <x>SvrROMTrainingData|Input|Tave_fuel</x>
+                    <y>SvrROMTrainingData|Output|k_inf</y>
+                    <xlabel>Average Fuel Temperature (K)</xlabel>
+                    <ylabel>k_inf</ylabel>
+                    <gridLocation>
+                        <x>12 17</x>
+                        <y>6 11</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+                <plot>
+                    <type>scatter</type>
+                    <x>SvrROMTrainingData|Input|mod_salt_ratio</x>
+                    <y>SvrROMTrainingData|Output|k_inf</y>
+                    <xlabel>Moderator to Fuel Ratio</xlabel>
+                    <ylabel>k_inf</ylabel>
+                    <gridLocation>
+                        <x>0 5</x>
+                        <y>12 17</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+            </plotSettings>
+            <actions>
+                <how>png,eps</how>
+				<labelFormat>
+				    <style>plain</style>
+				</labelFormat>
+				<figureProperties>
+				    <figsize>11.7,8.3</figsize>
+					<dpi>500</dpi>
+				</figureProperties>
+                <title>
+                    <text> </text>
+                </title>
+            </actions>
+            <filename>SvrTrainedData_plot</filename>
+        </Plot>
+        <Plot name="DtrTrainedData_plot" overwrite="false" verbosity="debug">
+            <plotSettings>
+                <gridSpace>18 18</gridSpace>
+                <plot>
+                    <type>scatter</type>
+                    <x>DtrROMTrainingData|Input|fuel_type</x>
+                    <y>DtrROMTrainingData|Output|k_inf</y>
+                    <xlabel>Fuel Type (U, U-Th, U-Pu)</xlabel>
+                    <ylabel>k_inf</ylabel>
+                    <gridLocation>
+                        <x>0 5</x>
+                        <y>0 5</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+                <plot>
+                    <type>scatter</type>
+                    <x>DtrROMTrainingData|Input|salt_type</x>
+                    <y>DtrROMTrainingData|Output|k_inf</y>
+                    <xlabel>Salt Type (LiF, NaF, NaCl)</xlabel>
+                    <ylabel>k_inf</ylabel>
+                    <gridLocation>
+                        <x>6 11</x>
+                        <y>0 5</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+                <plot>
+                    <type>scatter</type>
+                    <x>DtrROMTrainingData|Input|U235F4_mole_frac</x>
+                    <y>DtrROMTrainingData|Output|k_inf</y>
+                    <xlabel>U-235 fraction in U (%)</xlabel>
+                    <ylabel>k_inf</ylabel>
+                    <gridLocation>
+                        <x>12 17</x>
+                        <y>0 5</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+                <plot>
+                    <type>scatter</type>
+                    <x>DtrROMTrainingData|Input|UF4_mole_frac</x>
+                    <y>DtrROMTrainingData|Output|k_inf</y>
+                    <xlabel>U fraction in HWM (%)</xlabel>
+                    <ylabel>k_inf</ylabel>
+                    <gridLocation>
+                        <x>0 5</x>
+                        <y>6 11</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+                <plot>
+                    <type>scatter</type>
+                    <x>DtrROMTrainingData|Input|pitch</x>
+                    <y>DtrROMTrainingData|Output|k_inf</y>
+                    <xlabel>Pitch (cm)</xlabel>
+                    <ylabel>k_inf</ylabel>
+                    <gridLocation>
+                        <x>6 11</x>
+                        <y>6 11</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+                <plot>
+                    <type>scatter</type>
+                    <x>DtrROMTrainingData|Input|Tave_fuel</x>
+                    <y>DtrROMTrainingData|Output|k_inf</y>
+                    <xlabel>Average Fuel Temperature (K)</xlabel>
+                    <ylabel>k_inf</ylabel>
+                    <gridLocation>
+                        <x>12 17</x>
+                        <y>6 11</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+                <plot>
+                    <type>scatter</type>
+                    <x>DtrROMTrainingData|Input|mod_salt_ratio</x>
+                    <y>DtrROMTrainingData|Output|k_inf</y>
+                    <xlabel>Moderator to Fuel Ratio</xlabel>
+                    <ylabel>k_inf</ylabel>
+                    <gridLocation>
+                        <x>0 5</x>
+                        <y>12 17</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+            </plotSettings>
+            <actions>
+                <how>png,eps</how>
+				<labelFormat>
+				    <style>plain</style>
+				</labelFormat>
+				<figureProperties>
+				    <figsize>11.7,8.3</figsize>
+					<dpi>500</dpi>
+				</figureProperties>
+                <title>
+                    <text> </text>
+                </title>
+            </actions>
+            <filename>DtrTrainedData_plot</filename>
+        </Plot>
+        <Plot name="MlpTrainedData_plot" overwrite="false" verbosity="debug">
+            <plotSettings>
+                <gridSpace>18 18</gridSpace>
+                <plot>
+                    <type>scatter</type>
+                    <x>MlpROMTrainingData|Input|fuel_type</x>
+                    <y>MlpROMTrainingData|Output|k_inf</y>
+                    <xlabel>Fuel Type (U, U-Th, U-Pu)</xlabel>
+                    <ylabel>k_inf</ylabel>
+                    <gridLocation>
+                        <x>0 5</x>
+                        <y>0 5</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+                <plot>
+                    <type>scatter</type>
+                    <x>MlpROMTrainingData|Input|salt_type</x>
+                    <y>MlpROMTrainingData|Output|k_inf</y>
+                    <xlabel>Salt Type (LiF, NaF, NaCl)</xlabel>
+                    <ylabel>k_inf</ylabel>
+                    <gridLocation>
+                        <x>6 11</x>
+                        <y>0 5</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+                <plot>
+                    <type>scatter</type>
+                    <x>MlpROMTrainingData|Input|U235F4_mole_frac</x>
+                    <y>MlpROMTrainingData|Output|k_inf</y>
+                    <xlabel>U-235 fraction in U (%)</xlabel>
+                    <ylabel>k_inf</ylabel>
+                    <gridLocation>
+                        <x>12 17</x>
+                        <y>0 5</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+                <plot>
+                    <type>scatter</type>
+                    <x>MlpROMTrainingData|Input|UF4_mole_frac</x>
+                    <y>MlpROMTrainingData|Output|k_inf</y>
+                    <xlabel>U fraction in HWM (%)</xlabel>
+                    <ylabel>k_inf</ylabel>
+                    <gridLocation>
+                        <x>0 5</x>
+                        <y>6 11</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+                <plot>
+                    <type>scatter</type>
+                    <x>MlpROMTrainingData|Input|pitch</x>
+                    <y>MlpROMTrainingData|Output|k_inf</y>
+                    <xlabel>Pitch (cm)</xlabel>
+                    <ylabel>k_inf</ylabel>
+                    <gridLocation>
+                        <x>6 11</x>
+                        <y>6 11</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+                <plot>
+                    <type>scatter</type>
+                    <x>MlpROMTrainingData|Input|Tave_fuel</x>
+                    <y>MlpROMTrainingData|Output|k_inf</y>
+                    <xlabel>Average Fuel Temperature (K)</xlabel>
+                    <ylabel>k_inf</ylabel>
+                    <gridLocation>
+                        <x>12 17</x>
+                        <y>6 11</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+                <plot>
+                    <type>scatter</type>
+                    <x>MlpROMTrainingData|Input|mod_salt_ratio</x>
+                    <y>MlpROMTrainingData|Output|k_inf</y>
+                    <xlabel>Moderator to Fuel Ratio</xlabel>
+                    <ylabel>k_inf</ylabel>
+                    <gridLocation>
+                        <x>0 5</x>
+                        <y>12 17</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+            </plotSettings>
+            <actions>
+                <how>png,eps</how>
+				<labelFormat>
+				    <style>plain</style>
+				</labelFormat>
+				<figureProperties>
+				    <figsize>11.7,8.3</figsize>
+					<dpi>500</dpi>
+				</figureProperties>
+                <title>
+                    <text> </text>
+                </title>
+            </actions>
+            <filename>MlpTrainedData_plot</filename>
+        </Plot>
+        <Plot name="KnrTrainedData_plot" overwrite="false" verbosity="debug">
+            <plotSettings>
+                <gridSpace>18 18</gridSpace>
+                <plot>
+                    <type>scatter</type>
+                    <x>KnrROMTrainingData|Input|fuel_type</x>
+                    <y>KnrROMTrainingData|Output|k_inf</y>
+                    <xlabel>Fuel Type (U, U-Th, U-Pu)</xlabel>
+                    <ylabel>k_inf</ylabel>
+                    <gridLocation>
+                        <x>0 5</x>
+                        <y>0 5</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+                <plot>
+                    <type>scatter</type>
+                    <x>KnrROMTrainingData|Input|salt_type</x>
+                    <y>KnrROMTrainingData|Output|k_inf</y>
+                    <xlabel>Salt Type (LiF, NaF, NaCl)</xlabel>
+                    <ylabel>k_inf</ylabel>
+                    <gridLocation>
+                        <x>6 11</x>
+                        <y>0 5</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+                <plot>
+                    <type>scatter</type>
+                    <x>KnrROMTrainingData|Input|U235F4_mole_frac</x>
+                    <y>KnrROMTrainingData|Output|k_inf</y>
+                    <xlabel>U-235 fraction in U (%)</xlabel>
+                    <ylabel>k_inf</ylabel>
+                    <gridLocation>
+                        <x>12 17</x>
+                        <y>0 5</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+                <plot>
+                    <type>scatter</type>
+                    <x>KnrROMTrainingData|Input|UF4_mole_frac</x>
+                    <y>KnrROMTrainingData|Output|k_inf</y>
+                    <xlabel>U fraction in HWM (%)</xlabel>
+                    <ylabel>k_inf</ylabel>
+                    <gridLocation>
+                        <x>0 5</x>
+                        <y>6 11</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+                <plot>
+                    <type>scatter</type>
+                    <x>KnrROMTrainingData|Input|pitch</x>
+                    <y>KnrROMTrainingData|Output|k_inf</y>
+                    <xlabel>Pitch (cm)</xlabel>
+                    <ylabel>k_inf</ylabel>
+                    <gridLocation>
+                        <x>6 11</x>
+                        <y>6 11</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+                <plot>
+                    <type>scatter</type>
+                    <x>KnrROMTrainingData|Input|Tave_fuel</x>
+                    <y>KnrROMTrainingData|Output|k_inf</y>
+                    <xlabel>Average Fuel Temperature (K)</xlabel>
+                    <ylabel>k_inf</ylabel>
+                    <gridLocation>
+                        <x>12 17</x>
+                        <y>6 11</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+                <plot>
+                    <type>scatter</type>
+                    <x>KnrROMTrainingData|Input|mod_salt_ratio</x>
+                    <y>KnrROMTrainingData|Output|k_inf</y>
+                    <xlabel>Moderator to Fuel Ratio</xlabel>
+                    <ylabel>k_inf</ylabel>
+                    <gridLocation>
+                        <x>0 5</x>
+                        <y>12 17</y>
+                    </gridLocation>
+                    <kwargs>
+                        <edgecolor>None</edgecolor>
+                    </kwargs>
+                </plot>
+            </plotSettings>
+            <actions>
+                <how>png,eps</how>
+				<labelFormat>
+				    <style>plain</style>
+				</labelFormat>
+				<figureProperties>
+				    <figsize>11.7,8.3</figsize>
+					<dpi>500</dpi>
+				</figureProperties>
+                <title>
+                    <text> </text>
+                </title>
+            </actions>
+            <filename>KnrTrainedData_plot</filename>
+        </Plot>
+    </OutStreams>
+
+    <Databases>
+        <HDF5 name="hdf5_database" directory="DatabaseStorage" readMode="read"/>
+    </Databases>
+
+</Simulation>
