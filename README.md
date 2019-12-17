@@ -1,5 +1,7 @@
 # 2019-BigData_NPPs
-Big Data for NPPs Workshop, The Ohio State University Columbus, OH - Dec. 10-11, 2019
+Big Data for NPPs Workshop, The Ohio State University Columbus, OH - Dec. 10-11, 2019.
+
+Power point presentation for the results: '12-11-19_Presentation-for-BigData-for-NPPS.pptx'
 
 Put "framework/CodeInterfaces/Serpent" directory to your raven installation directory. 
 
