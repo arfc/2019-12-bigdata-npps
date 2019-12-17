@@ -1,0 +1,57 @@
+ set title "Molten Salt Reactor fuel channel"
+ % --- Surfaces
+ surf 1  cyl     0.0    0.0      $RAVEN-fuel_radius$    % fuel salt 
+ surf 2  sqc     0.0    0.0      $RAVEN-pitch$          % square unit cell with variable pitch
+ 
+ % --- Cells
+ cell 100  0     fuel     -1                 % fuel salt
+ cell 101  0     moder     1  -2             % graphite moderator
+ cell 102  0     outside       2             % outside
+ 
+ % --- Materials
+ % --- Fuel Type: $RAVEN-fuel_type$ Salt Type: $RAVEN-salt_type$  
+ % --- U235F4 mole fraction in UF4= $RAVEN-U235F4_mole_frac$  (0 to 100%)
+ % --- UF4 mole fraction in Salt= $RAVEN-UF4_mole_frac$  (0 to 100%)
+ mat fuel        $RAVEN-salt_density$        tmp          $RAVEN-Tave_fuel$             % g/cm3 for mixture
+ 3006.$RAVEN-temp_identifier$c                                   $RAVEN-Li6_frac$              % Mass fraction of Li-6
+ 3007.$RAVEN-temp_identifier$c                                   $RAVEN-Li7_frac$              % Mass fraction of Li-7
+ 4009.$RAVEN-temp_identifier$c                                   $RAVEN-Be9_frac$              % Mass fraction of Be-9
+ 9019.$RAVEN-temp_identifier$c                                   $RAVEN-F19_frac$              % Mass fraction of F-19
+ 11023.$RAVEN-temp_identifier$c                                  $RAVEN-Na23_frac$              % Mass fraction of Na-23
+ 17035.$RAVEN-temp_identifier$c                                  $RAVEN-Cl35_frac$              % Mass fraction of Cl-35
+ 17037.$RAVEN-temp_identifier$c                                  $RAVEN-Cl37_frac$              % Mass fraction of Cl-37
+ 90232.$RAVEN-temp_identifier$c                                  $RAVEN-Th232_frac$            % Mass fraction of Th-232
+ 92233.$RAVEN-temp_identifier$c                                  $RAVEN-U233_frac$             % Mass fraction of U-233
+ 92235.$RAVEN-temp_identifier$c                                  $RAVEN-U235_frac$             % Mass fraction of U-235
+ 92238.$RAVEN-temp_identifier$c                                  $RAVEN-U238_frac$             % Mass fraction of U-238 
+ 94238.$RAVEN-temp_identifier$c                                  $RAVEN-Pu238_frac$            % Mass fraction of Pu-238 
+ 94239.$RAVEN-temp_identifier$c                                  $RAVEN-Pu239_frac$            % Mass fraction of Pu-239 
+ 94240.$RAVEN-temp_identifier$c                                  $RAVEN-Pu240_frac$            % Mass fraction of Pu-240 
+ 94241.$RAVEN-temp_identifier$c                                  $RAVEN-Pu241_frac$            % Mass fraction of Pu-241 
+ 94242.$RAVEN-temp_identifier$c                                  $RAVEN-Pu242_frac$            % Mass fraction of Pu-242  
+ 
+ % --- Moderator graphite  
+ mat moder   -1.843    tmp    $RAVEN-Tave_fuel$    moder  gr  6012   6012.$RAVEN-temp_identifier$c  -1.0
+ 
+ % --- Thermal scattering data for graphite:  
+ therm   gr   grj3.20t  
+ 
+ % --- Cross section data library file path:  
+ % set acelib  "/u/sciteam/turkmen/nlibs/endfb7/xsdata"  % for BlueWaters
+ set acelib  "/home/mt/Desktop/MSFR/Serpent/c757mnyws00/xsdata/sss_endfb7u.xsdata"  % for office computer
+ 
+ % --- Periodic boundary condition:  
+ set bc 3
+ 
+ % --- Neutron population and criticality cycles:  
+ set pop 1500 100 50  
+ 
+ % --- Geometry and mesh plots:  
+ %  plot 3 2000 2000 1.0   
+ %  plot 2 2000 2000 0.0 
+ 
+ % Cell tally for the moderator
+ det  1  de   1   dm  moder 
+ 
+ % Energy grid structure
+ ene  1  1   1e-11   0.625e-6   20
