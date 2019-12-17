@@ -24,4 +24,4 @@ module load PrgEnv-gnu
 source activate raven_libraries
 export OMP_NUM_THREADS=32
 
-aprun -n 1 -d 32 /bin/bash raven_framework final.xml
+aprun -n 1 -d 32 /bin/bash raven_framework grid.xml
