@@ -1,0 +1,27 @@
+#!/bin/bash
+#PBS -l nodes=1:ppn=32
+#PBS -l walltime=00:30:00
+#PBS -N testjob
+#PBS -q debug
+### set the job stdout and stderr
+#PBS -e $PBS_JOBID.err
+#PBS -o $PBS_JOBID.out
+
+. /opt/modules/default/init/bash
+# mkdir -p /scratch/sciteam/$USER/$PBS_JOBID
+# cd /scratch/sciteam/$USER/$PBS_JOBID
+
+#bash /u/sciteam/turkmen/raven/scripts/establish_conda_env.sh
+#conda init --all
+module load bwpy
+module load bwpy-mpi
+#module load gcc
+#module load raven-devel
+
+cd $PBS_O_WORKDIR
+module unload PrgEnv-cray
+module load PrgEnv-gnu
+source activate raven_libraries
+export OMP_NUM_THREADS=32
+
+aprun -n 1 -d 32 /bin/bash raven_framework grid.xml

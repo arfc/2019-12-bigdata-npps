@@ -1,0 +1,96 @@
+Issue-1: There is a bug in the latest Raven version when running an input file on a cluster. 
+
+Solved: Modify your job file in the following way- from "aprun -n 1 -d 32 raven_framework <input_file>" to "aprun -n 1 -d 32 /bin/bash raven_framework <input_file>"
+=====================================================================================
+
+Issue-2: When summiting a job using job.pbs file,following error is emerging
+
+( 1.02 sec) DATABASE HDF5 : Message -> Database is located at: /mnt/c/scratch/sciteam/turkmen/raven/projects/DatabaseStorage/hdf5_database.h5 ( 1.03 sec) SIMULATION : Message -> -- Beginning step feedbackCalc of type: MultiRun -- ( 1.04 sec) STEP MULTIRUN : Message -> *** Beginning initialization *** ( 1.06 sec) Grid : Message -> No restart for Grid ( 1.06 sec) GRID ENTITY : Message -> Starting initialization of grid ( 1.06 sec) GRID ENTITY : Message -> Grid initialized... ( 1.07 sec) Code : Message -> job "1" submitted! ( 1.07 sec) STEP MULTIRUN : Message -> *** Initialization done *** ( 1.07 sec) STEP MULTIRUN : Message -> *** Beginning run *** Execution Command: [('parallel', 'aprun -n 1 -d 1 /projects/sciteam/bahg/serpent30/src/sss2 msr_channel_design_feedback.inp ')] ( 1.08 sec) Code : Message -> Execution command submitted: aprun -n 1 -d 1 /projects/sciteam/bahg/serpent30/src/sss2 msr_channel_design_feedback.inp
+( 283.58 sec) Code : Message -> Process Failed aprun -n 1 -d 1 /projects/sciteam/bahg/serpent30/src/sss2 msr_channel_design_feedback.inp returnCode 1 ( 283.58 sec) Code : Message -> 'socket_connect_unix failed: 15137 socket_connect_unix failed: 15137 socket_connect_unix failed: 15137 qstat: cannot connect to server (null) (errno=15137) could not connect to trqauthd qstat: Error (15137 - could not connect to trqauthd) craylog: WARNING: log tmp dir /var/spool/cray/llm is not writable aprun: Unable to contact apsys aprun: Exiting due to errors. Application aborted getBatchJobId: error opening /ufs/alps_shared/reservations, errno No such file or directory craylog: ERROR: discarding log message: <150>1 2019-11-22T20:54:53.620160-06:00 c14-4c2s4n3 aprun 13472 p0-20190705t150933 [alps_msgs@34] apid=none, Error, user=59011, batch_id=unknown, Unable to contact apsys ' ( 283.58 sec) Job Handler : Message -> Process Failed <Runners.SharedMemoryRunner.SharedMemoryRunner object at 0x2aaabc574250> internal returnCode -1 ( 283.58 sec) Code : Message -> job "2" submitted! Application 82238497 exit codes: 139 Application 82238497 resources: utime ~22s, stime ~13s, Rss ~141124, inblocks ~317359, outblocks ~6853
+
+Solved: Put all your files to '~/scratch/'.
+=====================================================================================
+
+Issue-3: The following error happens when I try to send a job with qsub command. Framework seems working properly but when it tries to run Serpent the process fails in an abrupt way.
+
+(    1.00 sec) Grid                     : Message         -> No restart for Grid
+(    1.00 sec) GRID ENTITY              : Message         -> Starting initialization of grid
+(    1.00 sec) GRID ENTITY              : Message         -> Grid initialized...
+(    1.00 sec) STEP MULTIRUN            : DEBUG           -> for the role of sampler the item of class Grid and name FeedbackGridmethod has
+been initialized
+(    1.00 sec) STEP MULTIRUN            : DEBUG           -> Sampler initialization dictionary: {'externalSeeding': None}
+(    1.00 sec) STEP MULTIRUN            : DEBUG           -> Generating input batch of size 1
+(    1.01 sec) Grid                     : DEBUG           -> Found new point to sample: {'Tave_fuel': 600.0, 'U235F4_mole_frac': 2.0, 'UF4_m
+ole_frac': 10.0, 'fuel_type': 1.0, 'mod_salt_ratio': 0.27400000000000002, 'pitch': 1.0, 'salt_type': 1.0, 'fuel_radius': 0.49985075180958571
+, 'Li6_frac': -0.00032517172292587581, 'Li7_frac': -7.9012793518772089, 'Be9_frac': -2.2554965714197626, 'F19_frac': -45.17069801637593, 'Na
+23_frac': -0.0, 'Cl35_frac': -0.0, 'Cl37_frac': -0.0, 'Th232_frac': -0.0, 'U233_frac': -0.0, 'U235_frac': -0.88238153801521757, 'U238_frac':
+ -43.789819350588957, 'Pu238_frac': -0.0, 'Pu239_frac': -0.0, 'Pu240_frac': -0.0, 'Pu241_frac': -0.0, 'Pu242_frac': -0.0, 'salt_density': 3.
+4121800000000002, 'temp_identifier': '06'}
+(    1.01 sec) Code                     : Message         -> job "1" submitted!
+(    1.01 sec) STEP MULTIRUN            : DEBUG           -> Submitted input 1
+(    1.01 sec) STEP MULTIRUN            : Message         -> ***    Initialization done    ***
+(    1.01 sec) STEP MULTIRUN            : Message         -> ***       Beginning run       ***
+Execution Command: [('parallel', 'aprun -n 1 -d 32   /projects/sciteam/bahg/serpent30/src/sss2 -omp 32  msr_channel_design_feedback.inp  ')]
+(    1.03 sec) Code                     : Message         -> Execution command submitted: aprun -n 1 -d 32   /projects/sciteam/bahg/serpent3
+0/src/sss2 -omp 32  msr_channel_design_feedback.inp
+(  283.45 sec) Code                     : Message         ->  Process Failed aprun -n 1 -d 32   /projects/sciteam/bahg/serpent30/src/sss2 -o
+mp 32  msr_channel_design_feedback.inp     returnCode 1
+(  283.48 sec) Code                     : Message         -> 'socket_connect_unix failed: 15137
+socket_connect_unix failed: 15137
+socket_connect_unix failed: 15137
+qstat: cannot connect to server (null) (errno=15137) could not connect to trqauthd
+qstat: Error (15137 - could not connect to trqauthd)
+craylog: WARNING: log tmp dir /var/spool/cray/llm is not writable
+aprun: Unable to contact apsys
+aprun: Exiting due to errors. Application aborted
+getBatchJobId: error opening /ufs/alps_shared/reservations, errno No such file or directory
+craylog: ERROR: discarding log message: <150>1 2019-11-23T12:23:53.462544-06:00 c2-4c0s7n0 aprun 18030 p0-20190705t150933 [alps_msgs@34] api
+d=none, Error, user=59011, batch_id=unknown, Unable to contact apsys
+'
+(  283.49 sec) Job Handler              : Message         ->  Process Failed <Runners.SharedMemoryRunner.SharedMemoryRunner object at 0x2aaa
+bc3f4850> internal returnCode -1
+(  283.49 sec) STEP MULTIRUN            : DEBUG           -> the job "1" has failed.
+(  283.49 sec) STEP MULTIRUN            : DEBUG           -> Testing if the sampler is ready to generate a new input
+(  283.49 sec) Grid                     : DEBUG           -> Found new point to sample: {'Tave_fuel': 600.0, 'U235F4_mole_frac': 2.0, 'UF4_m
+ole_frac': 10.0, 'fuel_type': 1.0, 'mod_salt_ratio': 0.27400000000000002, 'pitch': 1.0, 'salt_type': 2.0, 'fuel_radius': 0.49985075180958571
+, 'Li6_frac': -0.0, 'Li7_frac': -0.0, 'Be9_frac': -1.4375235418054275, 'F19_frac': -37.375452576555986, 'Na23_frac': -23.225041729325756, 'C
+l35_frac': -0.0, 'Cl37_frac': -0.0, 'Th232_frac': -0.0, 'U233_frac': -0.0, 'U235_frac': -0.74983886021628865, 'U238_frac': -37.2121432920965
+35, 'Pu238_frac': -0.0, 'Pu239_frac': -0.0, 'Pu240_frac': -0.0, 'Pu241_frac': -0.0, 'Pu242_frac': -0.0, 'salt_density': 4.3415999999999997,
+'temp_identifier': '06'}
+(  283.49 sec) Code                     : Message         -> job "2" submitted!
+Application 82243516 exit codes: 139
+
+Solved: Serpent needs to be complied without hybrid parallel calculation option. To do this, just make comment line 72 of 'Makefile'. Speaking of which, for standalone calculation Serpent works fine with hybrid method.
+=====================================================================================
+
+Issue-4: Raven fails right after the first iteration whenever I try to run the code. 
+
+(    0.91 sec) SIMULATION               : DEBUG           -> Moving to working directory: /mnt/c/scratch/sciteam/turkmen/raven/projects
+(    0.92 sec) Job Handler              : DEBUG           -> Setting maxQueueSize to 1
+(    0.92 sec) SIMULATION               : DEBUG           -> entering the run
+(    0.92 sec) SIMULATION               : Message         -> -- Beginning step feedbackCalc of type: MultiRun                    --
+(    0.92 sec) STEP MULTIRUN            : Message         -> ***  Beginning initialization ***
+(    0.93 sec) STEP MULTIRUN            : DEBUG           -> jobHandler initialized
+(    0.96 sec) STEP MULTIRUN            : DEBUG           -> for the role Model  the item of class Code            and name Serpent2        has been initialized
+(    0.96 sec) STEP MULTIRUN            : DEBUG           -> for the role Output the item of class PointSet        and name Feedback_samples has been initialized
+(    0.96 sec) Grid                     : Message         -> No restart for Grid
+(    0.96 sec) GRID ENTITY              : Message         -> Starting initialization of grid 
+(    0.96 sec) GRID ENTITY              : Message         -> Grid initialized...
+(    0.96 sec) STEP MULTIRUN            : DEBUG           -> for the role of sampler the item of class Grid and name FeedbackGridmethod has been initialized
+(    0.96 sec) STEP MULTIRUN            : DEBUG           -> Sampler initialization dictionary: {'externalSeeding': None}
+(    0.96 sec) STEP MULTIRUN            : DEBUG           -> Generating input batch of size 1
+(    0.97 sec) Grid                     : DEBUG           -> Found new point to sample: {'Tave_fuel': 900.0, 'U235F4_mole_frac': 5.0, 'UF4_mole_frac': 10.0, 'fuel_type': 1.0, 'mod_salt_ratio': 0.27400000000000002, 'pitch': 1.0, 'salt_type': 1.0, 'fuel_radius': 0.49985075180958571, 'Li6_frac': -0.00032522679151971627, 'Li7_frac': -7.9026174520648071, 'Be9_frac': -2.2558785450535166, 'F19_frac': -45.178347780015194, 'Na23_frac': -0.0, 'Cl35_frac': -0.0, 'Cl37_frac': -0.0, 'Th232_frac': -0.0, 'U233_frac': -0.0, 'U235_frac': -2.2063274284949022, 'U238_frac': -42.456503567580064, 'Pu238_frac': -0.0, 'Pu239_frac': -0.0, 'Pu240_frac': -0.0, 'Pu241_frac': -0.0, 'Pu242_frac': -0.0, 'salt_density': 3.2141800000000003, 'temp_identifier': '09'}
+(    0.97 sec) Code                     : Message         -> job "1" submitted!
+(    0.97 sec) STEP MULTIRUN            : DEBUG           -> Submitted input 1
+(    0.97 sec) STEP MULTIRUN            : Message         -> ***    Initialization done    ***
+(    0.97 sec) STEP MULTIRUN            : Message         -> ***       Beginning run       ***
+Execution Command: [('parallel', '  /mnt/c/scratch/sciteam/turkmen/raven/sss2  msr_channel_design_feedback.inp  ')]
+(    0.98 sec) Code                     : Message         -> Execution command submitted:   /mnt/c/scratch/sciteam/turkmen/raven/sss2  msr_channel_design_feedback.inp    
+(  168.17 sec) STEP MULTIRUN            : DEBUG           -> Just collected output  1 of the input      1
+(  168.17 sec) STEP MULTIRUN            : DEBUG           -> Testing if the sampler is ready to generate a new input
+(  168.17 sec) Grid                     : DEBUG           -> Found new point to sample: {'Tave_fuel': 900.0, 'U235F4_mole_frac': 5.0, 'UF4_mole_frac': 10.0, 'fuel_type': 1.0, 'mod_salt_ratio': 0.27400000000000002, 'pitch': 1.0, 'salt_type': 2.0, 'fuel_radius': 0.49985075180958571, 'Li6_frac': -0.0, 'Li7_frac': -0.0, 'Be9_frac': -1.4377304161637499, 'F19_frac': -37.380831286917186, 'Na23_frac': -23.228384050661745, 'Cl35_frac': -0.0, 'Cl37_frac': -0.0, 'Th232_frac': -0.0, 'U233_frac': -0.0, 'U235_frac': -1.874866924267101, 'U238_frac': -36.078187321990207, 'Pu238_frac': -0.0, 'Pu239_frac': -0.0, 'Pu240_frac': -0.0, 'Pu241_frac': -0.0, 'Pu242_frac': -0.0, 'salt_density': 3.7523999999999997, 'temp_identifier': '09'}
+(  168.17 sec) Code                     : Message         -> job "2" submitted!
+Application 82288495 exit codes: 139
+Application 82288495 resources: utime ~159s, stime ~12s, Rss ~299988, inblocks ~1250768, outblocks ~1887
+
+Solved: ITs of BlueWaters is still trying to find out the reason (Ticket was created on Nov 26.) 
